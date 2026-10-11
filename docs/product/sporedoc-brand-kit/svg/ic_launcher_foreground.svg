@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 108 108">
+  <defs>
+    <linearGradient id="fl" gradientUnits="userSpaceOnUse" x1="38" y1="40" x2="54" y2="75"><stop offset="0" stop-color="#E6C574"/><stop offset="0.45" stop-color="#CFA53A"/><stop offset="1" stop-color="#94702A"/></linearGradient>
+    <linearGradient id="fr" gradientUnits="userSpaceOnUse" x1="70" y1="40" x2="54" y2="75"><stop offset="0" stop-color="#D9B65A"/><stop offset="0.5" stop-color="#B38B33"/><stop offset="1" stop-color="#76571C"/></linearGradient>
+    <linearGradient id="glow" gradientUnits="userSpaceOnUse" x1="51" y1="0" x2="57" y2="0"><stop offset="0" stop-color="#39FF14" stop-opacity="0"/><stop offset="0.5" stop-color="#39FF14" stop-opacity="0.26"/><stop offset="1" stop-color="#39FF14" stop-opacity="0"/></linearGradient>
+    <radialGradient id="halo" gradientUnits="userSpaceOnUse" cx="54" cy="33" r="7"><stop offset="0" stop-color="#C8FFB8" stop-opacity="0.75"/><stop offset="0.3" stop-color="#39FF14" stop-opacity="0.32"/><stop offset="1" stop-color="#39FF14" stop-opacity="0"/></radialGradient>
+    <clipPath id="pyr"><path d="M54,33 L31,62 L54,75 L77,62 Z"/></clipPath>
+  </defs>
+  <path d="M54,33 L31,62 L54,75 Z" fill="url(#fl)"/>
+  <path d="M54,33 L77,62 L54,75 Z" fill="url(#fr)"/>
+  <g clip-path="url(#pyr)">
+    <path d="M0.7999999999999972,30 L68.8,84" stroke="#FFF4D6" stroke-opacity="0.04" stroke-width="0.35"/>
+    <path d="M68.8,30 L0.7999999999999972,84" stroke="#3A2A08" stroke-opacity="0.03" stroke-width="0.35"/>
+    <path d="M4.0,30 L72.0,84" stroke="#FFF4D6" stroke-opacity="0.07" stroke-width="0.35"/>
+    <path d="M72.0,30 L4.0,84" stroke="#3A2A08" stroke-opacity="0.05" stroke-width="0.35"/>
+    <path d="M7.199999999999999,30 L75.2,84" stroke="#FFF4D6" stroke-opacity="0.04" stroke-width="0.35"/>
+    <path d="M75.2,30 L7.199999999999999,84" stroke="#3A2A08" stroke-opacity="0.03" stroke-width="0.35"/>
+    <path d="M10.399999999999999,30 L78.4,84" stroke="#FFF4D6" stroke-opacity="0.07" stroke-width="0.35"/>
+    <path d="M78.4,30 L10.399999999999999,84" stroke="#3A2A08" stroke-opacity="0.05" stroke-width="0.35"/>
+    <path d="M13.6,30 L81.6,84" stroke="#FFF4D6" stroke-opacity="0.04" stroke-width="0.35"/>
+    <path d="M81.6,30 L13.6,84" stroke="#3A2A08" stroke-opacity="0.03" stroke-width="0.35"/>
+    <path d="M16.8,30 L84.8,84" stroke="#FFF4D6" stroke-opacity="0.07" stroke-width="0.35"/>
+    <path d="M84.8,30 L16.8,84" stroke="#3A2A08" stroke-opacity="0.05" stroke-width="0.35"/>
+    <path d="M20.0,30 L88.0,84" stroke="#FFF4D6" stroke-opacity="0.04" stroke-width="0.35"/>
+    <path d="M88.0,30 L20.0,84" stroke="#3A2A08" stroke-opacity="0.03" stroke-width="0.35"/>
+    <path d="M23.2,30 L91.2,84" stroke="#FFF4D6" stroke-opacity="0.07" stroke-width="0.35"/>
+    <path d="M91.2,30 L23.2,84" stroke="#3A2A08" stroke-opacity="0.05" stroke-width="0.35"/>
+    <path d="M26.4,30 L94.4,84" stroke="#FFF4D6" stroke-opacity="0.04" stroke-width="0.35"/>
+    <path d="M94.4,30 L26.4,84" stroke="#3A2A08" stroke-opacity="0.03" stroke-width="0.35"/>
+    <path d="M29.6,30 L97.6,84" stroke="#FFF4D6" stroke-opacity="0.07" stroke-width="0.35"/>
+    <path d="M97.6,30 L29.6,84" stroke="#3A2A08" stroke-opacity="0.05" stroke-width="0.35"/>
+    <path d="M32.8,30 L100.8,84" stroke="#FFF4D6" stroke-opacity="0.04" stroke-width="0.35"/>
+    <path d="M100.8,30 L32.8,84" stroke="#3A2A08" stroke-opacity="0.03" stroke-width="0.35"/>
+    <path d="M36.0,30 L104.0,84" stroke="#FFF4D6" stroke-opacity="0.07" stroke-width="0.35"/>
+    <path d="M104.0,30 L36.0,84" stroke="#3A2A08" stroke-opacity="0.05" stroke-width="0.35"/>
+    <path d="M39.2,30 L107.2,84" stroke="#FFF4D6" stroke-opacity="0.04" stroke-width="0.35"/>
+    <path d="M107.2,30 L39.2,84" stroke="#3A2A08" stroke-opacity="0.03" stroke-width="0.35"/>
+  </g>
+  <path d="M31,62 L54,33 L77,62" fill="none" stroke="#FFF0C4" stroke-opacity="0.55" stroke-width="0.28"/>
+  <path d="M31,62 L54,75 L77,62" fill="none" stroke="#5E4416" stroke-opacity="0.6" stroke-width="0.28"/>
+  <rect x="51" y="0" width="6" height="108" fill="url(#glow)"/>
+  <rect x="53.6" y="0" width="0.8" height="108" fill="#39FF14"/>
+  <rect x="53.85" y="0" width="0.3" height="108" fill="#E9FFE2" fill-opacity="0.85"/>
+  <circle cx="54" cy="33" r="7" fill="url(#halo)"/>
+  <circle cx="54" cy="33" r="3.4" fill="none" stroke="#39FF14" stroke-opacity="0.45" stroke-width="0.22"/>
+</svg>

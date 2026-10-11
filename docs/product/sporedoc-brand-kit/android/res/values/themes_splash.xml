@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SporeDoc — system splash (androidx.core:core-splashscreen 1.0.1, works from API 23; native on API 31+).
+  The system splash only accepts a SOLID background colour and an icon clipped to a circle.
+  Texture, nebula and wordmark live in the in-app BrandSplash (compose/BrandSplash.kt), which
+  starts on exactly the same frame and grows from it.
+-->
+<resources>
+    <color name="spore_abyss">#FF050508</color>
+
+    <style name="Theme.SporeDoc.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/spore_abyss</item>
+        <!-- 288dp box, content inside the 192dp circle (icon without background) -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
+        <item name="windowSplashScreenAnimationDuration">0</item>
+        <item name="postSplashScreenTheme">@style/Theme.SporeDoc</item>
+        <!-- Dark system bars so nothing white flashes -->
+        <item name="android:statusBarColor">@color/spore_abyss</item>
+        <item name="android:navigationBarColor">@color/spore_abyss</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>
+<!--
+  AndroidManifest.xml:
+    <application android:icon="@mipmap/ic_launcher" android:roundIcon="@mipmap/ic_launcher_round" ...>
+      <activity android:name=".MainActivity" android:theme="@style/Theme.SporeDoc.Starting" ...>
+
+  MainActivity.onCreate (before super.onCreate):
+    installSplashScreen()
+-->

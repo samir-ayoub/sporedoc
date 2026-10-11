@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SporeDoc mark: gold pyramid + laser beam. Grid 108 (adaptive-icon canvas). Pyramid sits inside the 66dp safe zone. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- left face -->
+    <path android:pathData="M54,33 L31,62 L54,75 Z">
+      <aapt:attr name="android:fillColor">
+        <gradient android:type="linear" android:startX="38" android:startY="40" android:endX="54" android:endY="75">
+          <item android:offset="0" android:color="#E6C574"/>
+          <item android:offset="0.45" android:color="#CFA53A"/>
+          <item android:offset="1" android:color="#94702A"/>
+        </gradient>
+      </aapt:attr>
+    </path>
+    <!-- right face -->
+    <path android:pathData="M54,33 L77,62 L54,75 Z">
+      <aapt:attr name="android:fillColor">
+        <gradient android:type="linear" android:startX="70" android:startY="40" android:endX="54" android:endY="75">
+          <item android:offset="0" android:color="#D9B65A"/>
+          <item android:offset="0.5" android:color="#B38B33"/>
+          <item android:offset="1" android:color="#76571C"/>
+        </gradient>
+      </aapt:attr>
+    </path>
+    <!-- brushed-brass streaks, clipped to the pyramid -->
+    <group>
+      <clip-path android:pathData="M54,33 L31,62 L54,75 L77,62 Z"/>
+      <path android:pathData="M0.7999999999999972,30 L68.8,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M68.8,30 L0.7999999999999972,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M4.0,30 L72.0,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M72.0,30 L4.0,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M7.199999999999999,30 L75.2,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M75.2,30 L7.199999999999999,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M10.399999999999999,30 L78.4,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M78.4,30 L10.399999999999999,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M13.6,30 L81.6,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M81.6,30 L13.6,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M16.8,30 L84.8,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M84.8,30 L16.8,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M20.0,30 L88.0,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M88.0,30 L20.0,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M23.2,30 L91.2,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M91.2,30 L23.2,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M26.4,30 L94.4,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M94.4,30 L26.4,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M29.6,30 L97.6,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M97.6,30 L29.6,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M32.8,30 L100.8,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M100.8,30 L32.8,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M36.0,30 L104.0,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M104.0,30 L36.0,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M39.2,30 L107.2,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M107.2,30 L39.2,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+    </group>
+    <!-- sharp metallic edges -->
+    <path android:pathData="M31,62 L54,33 L77,62" android:strokeColor="#8CFFF0C4" android:strokeWidth="0.28" android:strokeLineJoin="miter"/>
+    <path android:pathData="M31,62 L54,75 L77,62" android:strokeColor="#995E4416" android:strokeWidth="0.28" android:strokeLineJoin="miter"/>
+    <!-- laser glow -->
+    <path android:pathData="M51,0 L57,0 L57,108 L51,108 Z">
+      <aapt:attr name="android:fillColor">
+        <gradient android:type="linear" android:startX="51" android:startY="0" android:endX="57" android:endY="0">
+          <item android:offset="0" android:color="#0039FF14"/>
+          <item android:offset="0.5" android:color="#4239FF14"/>
+          <item android:offset="1" android:color="#0039FF14"/>
+        </gradient>
+      </aapt:attr>
+    </path>
+    <!-- laser core + hot centre -->
+    <path android:pathData="M53.6,0 L54.4,0 L54.4,108 L53.6,108 Z" android:fillColor="#39FF14"/>
+    <path android:pathData="M53.85,0 L54.15,0 L54.15,108 L53.85,108 Z" android:fillColor="#D9E9FFE2"/>
+    <!-- apex halo -->
+    <path android:pathData="M47,33 A7,7 0 1,0 61,33 A7,7 0 1,0 47,33 Z">
+      <aapt:attr name="android:fillColor">
+        <gradient android:type="radial" android:centerX="54" android:centerY="33" android:gradientRadius="7">
+          <item android:offset="0" android:color="#BFC8FFB8"/>
+          <item android:offset="0.3" android:color="#5239FF14"/>
+          <item android:offset="1" android:color="#0039FF14"/>
+        </gradient>
+      </aapt:attr>
+    </path>
+    <path android:pathData="M50.6,33 A3.4,3.4 0 1,0 57.4,33 A3.4,3.4 0 1,0 50.6,33 Z" android:strokeColor="#7339FF14" android:strokeWidth="0.22"/>
+</vector>
