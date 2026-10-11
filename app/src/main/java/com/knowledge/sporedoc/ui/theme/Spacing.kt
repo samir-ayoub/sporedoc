@@ -37,4 +37,24 @@ object SporeDocSpacing {
     // components.OutlinedPrimaryButton
     val buttonHeightDp: Dp = 58.dp
     val buttonIconGapDp: Dp = 14.dp
+
+    // screens.ViewerScreen.appBar
+    val viewerAppBarHeightDp: Dp = 68.dp
+    val viewerAppBarIconColumnWidthDp: Dp = 48.dp
+    val viewerAppBarHorizontalPaddingDp: Dp = 8.dp
+    val viewerAppBarColumnGapDp: Dp = 8.dp
+
+    // screens.ViewerScreen.pageStage
+    val viewerPageWidthDp: Dp = 282.dp
+    val viewerPageAspectRatio: Float = 282f / 398f // tokens.pageStage ratio (width / height), A4 1:1.414
+    val viewerPageIndicatorGapDp: Dp = 30.dp
+
+    // screens.ViewerScreen.footer
+    val viewerFooterPaddingTopDp: Dp = 18.dp
+    val viewerFooterPaddingHorizontalDp: Dp = 24.dp
+    val viewerFooterPaddingBottomDp: Dp = 30.dp
+    val viewerFooterButtonHeightDp: Dp = 58.dp
+
+    // ui/viewer/DeleteConfirmationDialog
+    val dialogPaddingDp: Dp = 20.dp
 }

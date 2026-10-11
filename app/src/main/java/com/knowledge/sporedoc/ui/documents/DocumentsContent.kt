@@ -39,6 +39,7 @@ fun DocumentsContent(
     state: DocumentsUiState,
     onCapture: () -> Unit,
     loadThumbnail: suspend (DocumentId) -> PageImage?,
+    onOpenDocument: (DocumentId, String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -49,6 +50,7 @@ fun DocumentsContent(
             DocumentsBody(
                 state = state,
                 loadThumbnail = loadThumbnail,
+                onOpenDocument = onOpenDocument,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -86,6 +88,7 @@ private fun DocumentsHeader(modifier: Modifier = Modifier) {
 private fun DocumentsBody(
     state: DocumentsUiState,
     loadThumbnail: suspend (DocumentId) -> PageImage?,
+    onOpenDocument: (DocumentId, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (state.sections.isEmpty()) {
@@ -104,7 +107,7 @@ private fun DocumentsBody(
                 DocumentSectionHeader(label = section.label)
             }
             items(section.rows, key = { it.id.value }) { row ->
-                DocumentRow(row = row, loadThumbnail = loadThumbnail)
+                DocumentRow(row = row, loadThumbnail = loadThumbnail, onOpenDocument = onOpenDocument)
             }
         }
     }
