@@ -43,6 +43,15 @@ fun DocumentsScreen(
     val errorMessage = stringResource(R.string.capture_error_message)
     val deleteErrorMessage = stringResource(R.string.delete_error_message)
     val renameErrorMessage = stringResource(R.string.rename_error_message)
+    val importErrorMessage = stringResource(R.string.import_error_message)
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            viewModel.onImportSelected(uri)
+        }
+    }
 
     val scanLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
@@ -79,6 +88,7 @@ fun DocumentsScreen(
                 DocumentsEffect.ShowCaptureError -> snackbarHostState.showSnackbar(errorMessage)
                 DocumentsEffect.ShowDeleteError -> snackbarHostState.showSnackbar(deleteErrorMessage)
                 DocumentsEffect.ShowRenameError -> snackbarHostState.showSnackbar(renameErrorMessage)
+                DocumentsEffect.ShowImportError -> snackbarHostState.showSnackbar(importErrorMessage)
                 is DocumentsEffect.ShareDocument -> {
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "application/pdf"
@@ -108,6 +118,7 @@ fun DocumentsScreen(
                     }
             },
             loadThumbnail = viewModel::loadThumbnail,
+            onImportRequested = { importLauncher.launch(arrayOf("application/pdf")) },
             onOpenDocument = onOpenDocument,
             onShareRequested = viewModel::onShareRequested,
             onRenameRequested = viewModel::onRenameRequested,

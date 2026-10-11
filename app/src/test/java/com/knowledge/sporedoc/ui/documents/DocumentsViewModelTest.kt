@@ -60,13 +60,15 @@ class DocumentsViewModelTest {
     private fun newViewModel(
         repository: FakeDocumentRepository,
         documentSourceFor: (Uri) -> DocumentSource = { FakeDocumentSource("PDF-OK:1") },
-        shareUriFor: (DocumentId) -> Uri = { Uri.parse("content://sporedoc/${it.value}") }
+        shareUriFor: (DocumentId) -> Uri = { Uri.parse("content://sporedoc/${it.value}") },
+        displayNameFor: (Uri) -> String? = { "picked.pdf" }
     ): DocumentsViewModel = DocumentsViewModel(
         documentRepository = repository,
         groupDocumentsIntoSections = groupUseCase(),
         formatDocumentMetaLine = formatDocumentMetaLine,
         documentSourceFor = documentSourceFor,
-        shareUriFor = shareUriFor
+        shareUriFor = shareUriFor,
+        displayNameFor = displayNameFor
     )
 
     private fun document(
@@ -250,6 +252,85 @@ class DocumentsViewModelTest {
         runCurrent()
 
         assertEquals(listOf(DocumentsEffect.ShowCaptureError), effects)
+        assertEquals(listOf("today.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+        assertTrue(repository.addDocumentCalls.isEmpty())
+        job.cancel()
+    }
+
+    // --- onImportSelected ---
+
+    @Test
+    fun `onImportSelected adds the picked pdf keeping the resolved display name and refreshes the list`() = runTest {
+        val repository = FakeDocumentRepository(emptyList())
+        var receivedUri: Uri? = null
+        val viewModel = newViewModel(
+            repository,
+            displayNameFor = { uri ->
+                receivedUri = uri
+                "contrato.pdf"
+            }
+        )
+        val pickedUri = Uri.parse("content://picker-result")
+
+        viewModel.onImportSelected(pickedUri)
+        runCurrent()
+
+        assertEquals(pickedUri, receivedUri)
+        assertEquals(1, repository.addDocumentCalls.size)
+        assertEquals("contrato.pdf", repository.addDocumentCalls.single().second)
+        val todaySection = viewModel.uiState.value.sections.single { it.label == SectionLabel.TODAY }
+        assertEquals(listOf("Spore_20261011_1430.pdf"), todaySection.rows.map { it.fileName })
+    }
+
+    @Test
+    fun `onImportSelected places the imported document at the top of TODAY among existing documents`() = runTest {
+        val existing = document("older_today.pdf", fixedNow.minusSeconds(3600))
+        val repository = FakeDocumentRepository(listOf(existing))
+        val viewModel = newViewModel(repository, displayNameFor = { "contrato.pdf" })
+
+        viewModel.onImportSelected(Uri.parse("content://picker-result"))
+        runCurrent()
+
+        val todaySection = viewModel.uiState.value.sections.single { it.label == SectionLabel.TODAY }
+        assertEquals(listOf("Spore_20261011_1430.pdf", "older_today.pdf"), todaySection.rows.map { it.fileName })
+    }
+
+    @Test
+    fun `onImportSelected emits ShowImportError and leaves the list unchanged when addDocument fails`() = runTest {
+        val existing = document("today.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(existing)).apply {
+            addDocumentResult = Result.Failure(DocumentError.UnreadableFile(DocumentId("x")))
+        }
+        val viewModel = newViewModel(repository, displayNameFor = { "contrato.pdf" })
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onImportSelected(Uri.parse("content://picker-result"))
+        runCurrent()
+
+        assertEquals(listOf(DocumentsEffect.ShowImportError), effects)
+        assertEquals(listOf("today.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+        job.cancel()
+    }
+
+    @Test
+    fun `onImportSelected emits ShowImportError and leaves the list unchanged when reading the uri throws`() = runTest {
+        val existing = document("today.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(existing))
+        val viewModel = newViewModel(
+            repository,
+            documentSourceFor = { throw java.io.IOException("resolver returned no stream") },
+            displayNameFor = { "contrato.pdf" }
+        )
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onImportSelected(Uri.parse("content://picker-result"))
+        runCurrent()
+
+        assertEquals(listOf(DocumentsEffect.ShowImportError), effects)
         assertEquals(listOf("today.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
         assertTrue(repository.addDocumentCalls.isEmpty())
         job.cancel()

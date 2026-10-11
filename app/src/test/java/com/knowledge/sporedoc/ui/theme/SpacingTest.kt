@@ -23,4 +23,17 @@ class SpacingTest {
         assertEquals(4.dp, SporeDocSpacing.sectionLabelPaddingBottomDp)
         assertEquals(44.dp, SporeDocSpacing.minTouchTargetDp)
     }
+
+    /**
+     * SD-6 RF1 / RF9: the import IconButton in `screens.DocumentsScreen.header.children`
+     * is `sizeDp: 48`, positioned "top-end, 14dp end, 18dp top"; its glyph (`icons.import`)
+     * is `sizeDp: 22`.
+     */
+    @Test
+    fun `import button tokens match the handover values`() {
+        assertEquals(48.dp, SporeDocSpacing.importButtonSizeDp)
+        assertEquals(14.dp, SporeDocSpacing.importButtonPaddingEndDp)
+        assertEquals(18.dp, SporeDocSpacing.importButtonPaddingTopDp)
+        assertEquals(22.dp, SporeDocSpacing.importGlyphSizeDp)
+    }
 }
