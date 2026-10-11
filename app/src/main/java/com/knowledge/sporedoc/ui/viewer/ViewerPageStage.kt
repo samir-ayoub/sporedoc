@@ -22,9 +22,13 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import com.knowledge.sporedoc.R
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.model.PixelSize
+import com.knowledge.sporedoc.ui.components.pixelSizeForDp
 import com.knowledge.sporedoc.ui.components.toImageBitmapOrNull
 import com.knowledge.sporedoc.ui.theme.SporeDocColors
 import com.knowledge.sporedoc.ui.theme.SporeDocSpacing
@@ -43,7 +47,7 @@ fun ViewerPageStage(
     pageCount: Int,
     currentPage: Int,
     onPageChanged: (Int) -> Unit,
-    loadPage: suspend (Int) -> PageImage?,
+    loadPage: suspend (Int, PixelSize) -> PageImage?,
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(initialPage = (currentPage - 1).coerceIn(0, (pageCount - 1).coerceAtLeast(0))) {
@@ -73,9 +77,17 @@ fun ViewerPageStage(
 }
 
 @Composable
-private fun PageStageContent(pageIndex: Int, loadPage: suspend (Int) -> PageImage?) {
+private fun PageStageContent(pageIndex: Int, loadPage: suspend (Int, PixelSize) -> PageImage?) {
+    val density = LocalDensity.current
+    val targetSize = remember(density) {
+        val heightDp: Dp = SporeDocSpacing.viewerPageWidthDp / SporeDocSpacing.viewerPageAspectRatio
+        density.pixelSizeForDp(
+            widthDp = SporeDocSpacing.viewerPageWidthDp,
+            heightDp = heightDp
+        )
+    }
     val pageImage by produceState<PageImage?>(initialValue = null, key1 = pageIndex) {
-        value = loadPage(pageIndex)
+        value = loadPage(pageIndex, targetSize)
     }
     Box(
         modifier = Modifier

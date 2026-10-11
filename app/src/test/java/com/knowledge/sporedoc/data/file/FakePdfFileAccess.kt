@@ -2,6 +2,7 @@ package com.knowledge.sporedoc.data.file
 
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentError
 import com.knowledge.sporedoc.domain.util.Result
 import java.io.File
@@ -11,9 +12,14 @@ import java.io.File
  * so repository tests run on the plain JVM.
  *
  * A "valid" pdf is any file whose content starts with "PDF-OK:<pageCount>".
- * Anything else is treated as an unreadable file.
+ * Anything else is treated as an unreadable file. [renderPage] echoes the requested
+ * [PixelSize] back as the result's width/height, so callers can assert the display
+ * target size was forwarded instead of some fixed page resolution (SD-10 R1/AC1).
  */
 class FakePdfFileAccess : PdfFileAccess {
+
+    /** Record of every (file, pageIndex, targetSize) passed to [renderPage]. */
+    val renderPageCalls = mutableListOf<Triple<File, Int, PixelSize>>()
 
     override fun pageCount(file: File): Result<Int, DocumentError> {
         val count = extractPageCount(file)
@@ -21,7 +27,8 @@ class FakePdfFileAccess : PdfFileAccess {
         return Result.Success(count)
     }
 
-    override fun renderPage(file: File, pageIndex: Int): Result<PageImage, DocumentError> {
+    override fun renderPage(file: File, pageIndex: Int, targetSize: PixelSize): Result<PageImage, DocumentError> {
+        renderPageCalls.add(Triple(file, pageIndex, targetSize))
         val count = extractPageCount(file)
             ?: return Result.Failure(DocumentError.UnreadableFile(DocumentId(file.name)))
         if (pageIndex < 0 || pageIndex >= count) {
@@ -30,8 +37,8 @@ class FakePdfFileAccess : PdfFileAccess {
         return Result.Success(
             PageImage(
                 bytes = byteArrayOf(pageIndex.toByte(), 0x7, 0x7),
-                width = 10,
-                height = 10
+                width = targetSize.widthPx,
+                height = targetSize.heightPx
             )
         )
     }

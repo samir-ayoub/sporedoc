@@ -23,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -31,6 +32,8 @@ import androidx.compose.ui.semantics.semantics
 import com.knowledge.sporedoc.R
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.model.PixelSize
+import com.knowledge.sporedoc.ui.components.pixelSizeForDp
 import com.knowledge.sporedoc.ui.components.toImageBitmapOrNull
 import com.knowledge.sporedoc.ui.theme.SporeDocColors
 import com.knowledge.sporedoc.ui.theme.SporeDocSpacing
@@ -46,7 +49,7 @@ import com.knowledge.sporedoc.ui.theme.SporeDocTypography
 @Composable
 fun DocumentRow(
     row: DocumentRowUi,
-    loadThumbnail: suspend (DocumentId) -> PageImage?,
+    loadThumbnail: suspend (DocumentId, PixelSize) -> PageImage?,
     onOpenDocument: (DocumentId, String) -> Unit = { _, _ -> },
     onShareRequested: (DocumentId) -> Unit = {},
     onRenameRequested: (DocumentId, String) -> Unit = { _, _ -> },
@@ -171,11 +174,18 @@ private fun MoreOptionsButton(
 @Composable
 private fun DocumentThumbnail(
     id: DocumentId,
-    loadThumbnail: suspend (DocumentId) -> PageImage?,
+    loadThumbnail: suspend (DocumentId, PixelSize) -> PageImage?,
     modifier: Modifier = Modifier
 ) {
+    val density = LocalDensity.current
+    val targetSize = remember(density) {
+        density.pixelSizeForDp(
+            widthDp = SporeDocSpacing.thumbnailWidthDp,
+            heightDp = SporeDocSpacing.thumbnailHeightDp
+        )
+    }
     val pageImage by produceState<PageImage?>(initialValue = null, key1 = id) {
-        value = loadThumbnail(id)
+        value = loadThumbnail(id, targetSize)
     }
     Box(
         modifier = modifier

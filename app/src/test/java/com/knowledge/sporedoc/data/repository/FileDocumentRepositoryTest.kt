@@ -2,6 +2,7 @@ package com.knowledge.sporedoc.data.repository
 
 import com.knowledge.sporedoc.data.file.FakePdfFileAccess
 import com.knowledge.sporedoc.data.file.validPdfContent
+import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentError
 import com.knowledge.sporedoc.domain.util.Result
 import kotlinx.coroutines.test.runTest
@@ -23,6 +24,8 @@ class FileDocumentRepositoryTest {
 
     private val fixedNow: Instant =
         ZonedDateTime.of(2026, 10, 11, 14, 30, 0, 0, ZoneId.systemDefault()).toInstant()
+
+    private val target = PixelSize(widthPx = 76, heightPx = 104)
 
     private fun newRepository(clock: () -> Instant = { fixedNow }): FileDocumentRepository =
         FileDocumentRepository(
@@ -99,7 +102,7 @@ class FileDocumentRepositoryTest {
         val repository = newRepository()
         val added = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = null).asSuccess()
 
-        val image = repository.getPageImage(added.id, 2).asSuccess()
+        val image = repository.getPageImage(added.id, 2, target).asSuccess()
 
         assertTrue(image.bytes.isNotEmpty())
     }
@@ -109,7 +112,7 @@ class FileDocumentRepositoryTest {
         val repository = newRepository()
         val added = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = null).asSuccess()
 
-        val error = repository.getPageImage(added.id, 3).asFailure()
+        val error = repository.getPageImage(added.id, 3, target).asFailure()
 
         assertTrue(error is DocumentError.PageIndexOutOfBounds)
         error as DocumentError.PageIndexOutOfBounds
@@ -122,10 +125,38 @@ class FileDocumentRepositoryTest {
         val repository = newRepository()
         val added = repository.addDocument(FakeDocumentSource(validPdfContent(4)), requestedName = null).asSuccess()
 
-        val thumbnail = repository.getThumbnail(added.id).asSuccess()
-        val firstPage = repository.getPageImage(added.id, 0).asSuccess()
+        val thumbnail = repository.getThumbnail(added.id, target).asSuccess()
+        val firstPage = repository.getPageImage(added.id, 0, target).asSuccess()
 
         assertTrue(thumbnail.bytes.contentEquals(firstPage.bytes))
+    }
+
+    // --- SD-10: render target size, not full page resolution ---
+
+    @Test
+    fun `getThumbnail requests the display target size instead of some fixed page resolution`() = runTest {
+        val repository = newRepository()
+        val added = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = null).asSuccess()
+        val thumbnailTarget = PixelSize(widthPx = 38, heightPx = 52)
+
+        val thumbnail = repository.getThumbnail(added.id, thumbnailTarget).asSuccess()
+
+        assertEquals(thumbnailTarget.widthPx, thumbnail.width)
+        assertEquals(thumbnailTarget.heightPx, thumbnail.height)
+    }
+
+    @Test
+    fun `getPageImage requests the caller's target size, and a different target yields a differently sized image`() = runTest {
+        val repository = newRepository()
+        val added = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = null).asSuccess()
+        val viewerTarget = PixelSize(widthPx = 282, heightPx = 398)
+
+        val image = repository.getPageImage(added.id, 1, viewerTarget).asSuccess()
+        val thumbnail = repository.getThumbnail(added.id, PixelSize(widthPx = 38, heightPx = 52)).asSuccess()
+
+        assertEquals(viewerTarget.widthPx, image.width)
+        assertEquals(viewerTarget.heightPx, image.height)
+        assertTrue(image.width != thumbnail.width || image.height != thumbnail.height)
     }
 
     @Test
@@ -145,7 +176,7 @@ class FileDocumentRepositoryTest {
         val added = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = null).asSuccess()
         File(tempFolder.root, added.fileName).writeText("NOT_A_PDF")
 
-        val error = repository.getPageImage(added.id, 0).asFailure()
+        val error = repository.getPageImage(added.id, 0, target).asFailure()
 
         assertTrue(error is DocumentError.UnreadableFile)
     }

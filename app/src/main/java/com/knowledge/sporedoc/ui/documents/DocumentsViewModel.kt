@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentError
 import com.knowledge.sporedoc.domain.repository.DocumentRepository
 import com.knowledge.sporedoc.domain.usecase.FormatDocumentMetaLine
@@ -45,8 +46,8 @@ class DocumentsViewModel(
     }
 
     /** Called by the row's own lazy image-loading side effect; null on any failure. */
-    suspend fun loadThumbnail(id: DocumentId): PageImage? =
-        when (val result = documentRepository.getThumbnail(id)) {
+    suspend fun loadThumbnail(id: DocumentId, targetSize: PixelSize): PageImage? =
+        when (val result = documentRepository.getThumbnail(id, targetSize)) {
             is Result.Success -> result.value
             is Result.Failure -> null
         }

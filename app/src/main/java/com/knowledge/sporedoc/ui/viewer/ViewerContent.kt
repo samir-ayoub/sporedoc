@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.ui.components.DeleteConfirmationDialog
 import com.knowledge.sporedoc.ui.theme.effects.BackgroundScreen
 import com.knowledge.sporedoc.ui.theme.effects.Grain
@@ -19,7 +20,7 @@ import com.knowledge.sporedoc.ui.theme.effects.Vignette
 @Composable
 fun ViewerContent(
     state: ViewerUiState,
-    loadPage: suspend (Int) -> PageImage?,
+    loadPage: suspend (Int, PixelSize) -> PageImage?,
     onBack: () -> Unit,
     onDeleteRequested: () -> Unit,
     onDeleteConfirmed: () -> Unit,

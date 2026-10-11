@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentRepository
 import com.knowledge.sporedoc.domain.util.Result
 import kotlinx.coroutines.channels.Channel
@@ -46,8 +47,8 @@ class ViewerViewModel(
     }
 
     /** Lazily fetches one page's image, mirroring DocumentsViewModel.loadThumbnail; null on any failure. */
-    suspend fun loadPage(pageIndex: Int): PageImage? =
-        when (val result = documentRepository.getPageImage(documentId, pageIndex)) {
+    suspend fun loadPage(pageIndex: Int, targetSize: PixelSize): PageImage? =
+        when (val result = documentRepository.getPageImage(documentId, pageIndex, targetSize)) {
             is Result.Success -> result.value
             is Result.Failure -> null
         }
