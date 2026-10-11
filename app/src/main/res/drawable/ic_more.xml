@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "more" icon: three vertical 1x4dp bars at y=1, 8, 15 (viewBox 14x20). tokens.stroke.iconStrokeDp: strokeWidth="1dp" -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="14dp"
+    android:height="20dp"
+    android:viewportWidth="14"
+    android:viewportHeight="20">
+    <path
+        android:pathData="M7 1v4"
+        android:strokeColor="#73FDFBF7"
+        android:strokeWidth="1"
+        android:strokeLineJoin="miter"
+        android:strokeLineCap="square" />
+    <path
+        android:pathData="M7 8v4"
+        android:strokeColor="#73FDFBF7"
+        android:strokeWidth="1"
+        android:strokeLineJoin="miter"
+        android:strokeLineCap="square" />
+    <path
+        android:pathData="M7 15v4"
+        android:strokeColor="#73FDFBF7"
+        android:strokeWidth="1"
+        android:strokeLineJoin="miter"
+        android:strokeLineCap="square" />
+</vector>
