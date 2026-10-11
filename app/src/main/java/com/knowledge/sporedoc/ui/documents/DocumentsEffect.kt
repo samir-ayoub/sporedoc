@@ -15,4 +15,7 @@ sealed interface DocumentsEffect {
 
     /** An unexpected rename failure other than invalid name or name collision. */
     data object ShowRenameError : DocumentsEffect
+
+    /** The picked PDF could not be imported (unreadable file, read failure, etc.). */
+    data object ShowImportError : DocumentsEffect
 }

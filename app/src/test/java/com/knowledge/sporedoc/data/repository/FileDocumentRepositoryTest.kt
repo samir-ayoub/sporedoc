@@ -203,6 +203,46 @@ class FileDocumentRepositoryTest {
         assertEquals(validPdfContent(1), File(tempFolder.root, "contrato.pdf").readText())
     }
 
+    @Test
+    fun `addDocument returns an unreadable-file error and leaves no partial file when the content is not a valid pdf`() = runTest {
+        val repository = newRepository()
+
+        val error = repository.addDocument(FakeDocumentSource("NOT_A_PDF"), requestedName = "contrato.pdf").asFailure()
+
+        assertTrue(error is DocumentError.UnreadableFile)
+        assertFalse(File(tempFolder.root, "contrato.pdf").exists())
+    }
+
+    @Test
+    fun `addDocument with an unreadable file leaves an existing document with the same requested name intact`() = runTest {
+        val repository = newRepository()
+        repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "contrato.pdf").asSuccess()
+
+        val error = repository.addDocument(FakeDocumentSource("NOT_A_PDF"), requestedName = "contrato.pdf").asFailure()
+
+        assertTrue(error is DocumentError.UnreadableFile)
+        assertEquals(validPdfContent(1), File(tempFolder.root, "contrato.pdf").readText())
+    }
+
+    @Test
+    fun `addDocument sets the copied file's lastModified from the injected clock, not the file system time`() = runTest {
+        val repository = newRepository()
+
+        repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "contrato.pdf").asSuccess()
+
+        val file = File(tempFolder.root, "contrato.pdf")
+        assertEquals(fixedNow.epochSecond, file.lastModified() / 1000)
+    }
+
+    @Test
+    fun `addDocument returns a document whose modifiedAt matches the injected clock`() = runTest {
+        val repository = newRepository()
+
+        val document = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "contrato.pdf").asSuccess()
+
+        assertEquals(fixedNow.epochSecond, document.modifiedAt.epochSecond)
+    }
+
     // --- renameDocument ---
 
     @Test

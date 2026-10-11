@@ -11,6 +11,8 @@
     <string name="capture_label">CAPTURE</string>
     <string name="capture_content_description">Capture document</string>
     <string name="capture_error_message">Couldn\'t save the scanned document. Please try again.</string>
+    <string name="import_content_description">Import PDF</string>
+    <string name="import_error_message">Couldn\'t import that file. Please choose a valid PDF.</string>
     <string name="share_text_action_label">[ SHARE ]</string>
     <string name="more_options_content_description">More options</string>
     <string name="more_options_rename">Rename</string>
