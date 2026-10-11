@@ -1,3 +1,14 @@
 <resources>
     <string name="app_name">SporeDoc</string>
+
+    <!-- DocumentsScreen -->
+    <string name="documents_wordmark">SPOREDOC</string>
+    <string name="documents_subtitle">DOCUMENT SCANNER</string>
+    <string name="documents_empty_state">NO DOCUMENTS YET</string>
+    <string name="section_today">TODAY</string>
+    <string name="section_recent_documents">RECENT DOCUMENTS</string>
+    <string name="section_archive">ARCHIVE</string>
+    <string name="capture_label">CAPTURE</string>
+    <string name="capture_content_description">Capture document</string>
+    <string name="capture_error_message">Couldn\'t save the scanned document. Please try again.</string>
 </resources>
