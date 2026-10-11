@@ -1,0 +1,280 @@
+{
+  "meta": {
+    "app": "SporeDoc",
+    "suite": "Knowledge Applications",
+    "version": "MVP v4 (approved)",
+    "platform": "Android",
+    "uiToolkit": "Jetpack Compose (Material 3, heavily customised)",
+    "referenceFrame": { "widthDp": 390, "heightDp": 844, "note": "1 CSS px in the prototype = 1 dp. Text sizes = sp." },
+    "scanEngine": "Google ML Kit Document Scanner API (capture, crop and filters are native; the app owns only these 2 screens)",
+    "screens": ["DocumentsScreen", "ViewerScreen"],
+    "language": "en (UI copy)"
+  },
+
+  "tokens": {
+    "color": {
+      "bgCenter": "#12091F",
+      "bgMid": "#0A0612",
+      "bgEdge": "#030305",
+      "nebulaHaze": "#541E70",
+      "ivory": "#FDFBF7",
+      "ivoryMeta": "#FDFBF7 @ 42% alpha (0x6BFDFBF7)",
+      "ivoryIcon": "#FDFBF7 @ 45% alpha (0x73FDFBF7)",
+      "ivoryMuted": "#FDFBF7 @ 50% alpha (0x80FDFBF7)",
+      "goldBrushed": "#D4AF37",
+      "goldMatte": "#B89047",
+      "goldSection": "#9C8152",
+      "goldDividerSoft": "#B89047 @ 35% alpha (0x59B89047)",
+      "goldDividerFooter": "#B89047 @ 45% alpha (0x73B89047)",
+      "brassVeil": "#D4AF37 @ 7% alpha (0x12D4AF37)",
+      "magma": "#E65C00",
+      "laserGreen": "#39FF14",
+      "paper": "#E4DDCD",
+      "paperThumb": "#CFC8B8",
+      "ink": "#17131C",
+      "inkThumb": "#1A1520",
+      "inkRule": "#7F786C",
+      "orbCore": "#1E1033",
+      "orbMid": "#0C0716",
+      "orbEdge": "#050309"
+    },
+    "typography": {
+      "display": {
+        "family": "Anton (Google Fonts)",
+        "fallback": "Impact, sans-serif",
+        "usage": "SPOREDOC wordmark and the 'FATURA' heading on the sample page only"
+      },
+      "mono": {
+        "family": "JetBrains Mono (Google Fonts)",
+        "weights": [300, 400, 500],
+        "usage": "All UI text: file names, metadata, section labels, buttons, app bar title"
+      },
+      "styles": {
+        "wordmark":        { "font": "display", "sizeSp": 60, "lineHeight": 0.9, "letterSpacingSp": 15, "color": "ivory", "case": "upper", "shadow": ["0 0 28 ivory@8%", "0 4 18 black@80%"] },
+        "subtitle":        { "font": "mono", "weight": 400, "sizeSp": 8, "letterSpacingSp": 4.6, "color": "goldMatte", "case": "upper" },
+        "sectionLabel":    { "font": "mono", "weight": 500, "sizeSp": 9.5, "letterSpacingSp": 3.4, "color": "goldSection", "case": "upper" },
+        "fileName":        { "font": "mono", "weight": 400, "sizeSp": 13, "color": "ivory", "maxLines": 1, "overflow": "ellipsis" },
+        "fileMeta":        { "font": "mono", "weight": 300, "sizeSp": 10, "letterSpacingSp": 0.6, "color": "ivoryMeta", "format": "{pages} PP  /  {size} MB  /  {dd.MM.yyyy HH:mm}" },
+        "textAction":      { "font": "mono", "weight": 400, "sizeSp": 10.5, "letterSpacingSp": 2.4, "color": "magma", "case": "upper" },
+        "primaryButton":   { "font": "mono", "weight": 400, "sizeSp": 12, "letterSpacingSp": 7, "color": "ivory", "case": "upper" },
+        "exportButton":    { "font": "mono", "weight": 400, "sizeSp": 11.5, "letterSpacingSp": 4.5, "color": "ivory", "case": "upper" },
+        "appBarTitle":     { "font": "mono", "weight": 400, "sizeSp": 12, "letterSpacingSp": 0.6, "color": "ivory", "maxLines": 1, "overflow": "ellipsis" },
+        "pageIndicator":   { "font": "mono", "weight": 300, "sizeSp": 10, "letterSpacingSp": 4, "color": "ivoryMeta", "case": "upper" }
+      }
+    },
+    "shape": { "cornerRadiusDp": 0, "rule": "No rounded corners anywhere. All buttons, thumbnails, pages and surfaces are square." },
+    "stroke": {
+      "hairlineDp": 0.5,
+      "frameDp": 1,
+      "iconStrokeDp": 1,
+      "iconJoin": "miter",
+      "iconCap": "square"
+    },
+    "spacing": {
+      "screenGutterDp": 24,
+      "rowPaddingVerticalDp": 14,
+      "rowGapThumbToTextDp": 18,
+      "sectionTopGapDp": 14,
+      "sectionLabelPadding": "16dp top, 4dp bottom",
+      "minTouchTargetDp": 44
+    },
+    "effects": {
+      "background": {
+        "type": "stacked radial gradients",
+        "layers": [
+          { "shape": "ellipse 120% x 85%", "center": "50% 45%", "stops": [["bgCenter", 0], ["bgMid", 0.45], ["bgEdge", 0.80]] },
+          { "shape": "ellipse 60% x 38%", "center": "18% 88%", "stops": [["nebulaHaze @ 26%", 0], ["transparent", 0.70]], "screen": "Documents only" },
+          { "shape": "ellipse 48% x 32%", "center": "50% 46%", "stops": [["#4E1C6C @ 42%", 0], ["transparent", 0.75]], "screen": "Viewer only (halo behind the page)" },
+          { "shape": "ellipse 30% x 18%", "center": "78% 22%", "stops": [["magma @ 7%", 0], ["transparent", 0.70]], "screen": "Viewer only" }
+        ]
+      },
+      "vignette": { "shape": "ellipse 130% x 90%", "center": "50% 45%", "stops": [["transparent", 0.55], ["black @ 50%", 1.0]], "zOrder": "above content, below grain" },
+      "grain": {
+        "type": "monochrome fractal noise overlay over the WHOLE screen (including buttons)",
+        "opacity": 0.08,
+        "baseFrequency": 0.95,
+        "octaves": 3,
+        "zOrder": "topmost, non-interactive",
+        "androidImplementation": "Pre-rendered tileable noise PNG (256x256, greyscale) drawn with ImageShader(TileMode.Repeated) at alpha 0.08, or AGSL RuntimeShader on API 33+. Do not regenerate per frame."
+      },
+      "eclipseOrb": {
+        "screen": "Documents only",
+        "sizeDp": 360,
+        "position": "top-right, offset x +150dp, y -170dp (mostly off-screen)",
+        "fill": "radial gradient at 34% 72%: orbCore 0% -> orbMid 48% -> orbEdge 70%",
+        "rimLight": ["inset 10,-8 blur 26 magma@16%", "inset 2,-2 blur 4 #FFAA5A@12%", "outer glow blur 90 spread 10 magma@5%"],
+        "zOrder": "behind the header"
+      },
+      "laserReticle": {
+        "color": "laserGreen",
+        "lineThicknessDp": 0.75,
+        "armLengthDp": 13,
+        "offsetFromPageDp": 9,
+        "glow": ["blur 4 spread 0.5 laserGreen@90%", "blur 16 spread 4 laserGreen@22%"]
+      },
+      "pageShadow": {
+        "outer": ["0 34 blur 80 spread 6 black@92%", "0 0 blur 120 spread 40 #0A0414@85%"],
+        "inner": ["inset blur 38 spread 8 #12091F@55%", "inset blur 6 black@50%"],
+        "intent": "The page should rise out of the dark rather than sit on top of it"
+      },
+      "brushedBrass": {
+        "base": "brassVeil",
+        "streaks": "horizontal 1dp lines of goldBrushed @3.5% every 3dp",
+        "border": "0.5dp goldBrushed"
+      }
+    }
+  },
+
+  "icons": {
+    "style": "Single 1dp stroke, square caps, miter joins, no fills. Supply as VectorDrawables.",
+    "import":      { "color": "goldMatte", "sizeDp": 22, "path": ["M12 3 21.5 20.5h-19z", "M12 3v17.5"], "viewBox": "0 0 24 24", "description": "Split pyramid" },
+    "more":        { "color": "ivoryIcon", "sizeDp": "14x20", "description": "Three vertical 1x4dp bars at y=1, 8, 15 (viewBox 14x20)" },
+    "capture":     { "color": "goldBrushed", "sizeDp": 18, "path": ["M3 8V3h5", "M16 3h5v5", "M21 16v5h-5", "M8 21H3v-5"], "viewBox": "0 0 24 24", "description": "Viewfinder corners" },
+    "back":        { "color": "ivory", "sizeDp": 22, "path": ["M21 12H3.5", "M10 5.5 3.5 12l6.5 6.5"], "viewBox": "0 0 24 24" },
+    "delete":      { "color": "magma", "sizeDp": 20, "path": ["M2.5 4.5h19L12 21z"], "viewBox": "0 0 24 24", "description": "Inverted triangle" },
+    "export":      { "color": "goldBrushed", "sizeDp": 16, "path": ["M12 15V3", "M7 8l5-5 5 5", "M4 14v7h16v-7"], "viewBox": "0 0 24 24" }
+  },
+
+  "components": {
+    "DocumentRow": {
+      "container": "No card or background. Full-bleed row, padding 14dp top/bottom, 24dp start, 10dp end.",
+      "layout": "Row(verticalAlignment = Top): Thumbnail | Column(weight 1) | MoreButton",
+      "thumbnail": {
+        "outerFrame": "1dp goldMatte border, 2dp inner padding",
+        "page": "38x52dp, paperThumb fill, inner shadow blur 10 black@50%",
+        "content": "Real first-page render (PdfRenderer) at low resolution; the prototype uses abstract lines as a placeholder"
+      },
+      "textColumn": {
+        "gapDp": 6,
+        "children": ["fileName", "fileMeta", "ShareTextAction (optional)"]
+      },
+      "shareTextAction": { "label": "[ SHARE ]", "style": "textAction", "heightDp": 28, "background": "none", "action": "Intent.ACTION_SEND with the PDF FileProvider URI" },
+      "moreButton": { "sizeDp": 44, "icon": "more", "contentDescription": "More options", "menu": ["Rename", "Share", "Delete"] },
+      "tap": "Navigate to ViewerScreen(documentId)",
+      "dividerBetweenRows": "0.5dp goldDividerSoft, inset 24dp from the start, running to the end edge"
+    },
+    "SectionHeader": {
+      "topRule": "0.5dp goldMatte, full width (edge to edge)",
+      "label": "sectionLabel style, padding 16dp top, 4dp bottom, 24dp start",
+      "values": ["TODAY", "RECENT DOCUMENTS", "ARCHIVE"],
+      "groupingRule": "TODAY = same calendar day; RECENT DOCUMENTS = last 30 days; ARCHIVE = older"
+    },
+    "OutlinedPrimaryButton": {
+      "usedIn": "DocumentsScreen (CAPTURE)",
+      "size": "fillMaxWidth x 58dp",
+      "border": "0.5dp goldBrushed",
+      "background": "#050309 @ 55%",
+      "content": "capture icon + 14dp gap + label",
+      "label": "CAPTURE",
+      "textStyle": "primaryButton",
+      "shape": "RectangleShape",
+      "contentDescription": "Capture document"
+    },
+    "ExportButton": {
+      "usedIn": "ViewerScreen",
+      "size": "fillMaxWidth x 58dp",
+      "surface": "brushedBrass",
+      "content": "export icon + 14dp gap + 'EXPORT DOCUMENT' + ' (PDF)' in ivoryMuted",
+      "textStyle": "exportButton",
+      "shape": "RectangleShape",
+      "action": "Android share sheet (Intent.createChooser) with the PDF"
+    }
+  },
+
+  "screens": {
+    "DocumentsScreen": {
+      "prototypeFile": "SporeMain.dc.html",
+      "layers": ["background", "eclipseOrb", "content", "bottomDock", "vignette", "grain"],
+      "header": {
+        "heightDp": 196,
+        "alignment": "content anchored to bottom-start, padding 24dp start/end, 28dp bottom",
+        "children": [
+          { "type": "IconButton", "icon": "import", "position": "top-end, 14dp end, 18dp top", "sizeDp": 48, "contentDescription": "Import from gallery", "action": "PickVisualMedia (images) or OpenDocument (application/pdf)" },
+          { "type": "Text", "text": "SPOREDOC", "style": "wordmark" },
+          { "type": "Text", "text": "DOCUMENT SCANNER", "style": "subtitle", "marginTopDp": 16 }
+        ],
+        "note": "No app bar background, no underline. Empty space carries the weight."
+      },
+      "body": {
+        "type": "LazyColumn",
+        "structure": [
+          { "section": "TODAY", "items": [
+            { "fileName": "Spore_20261011_1430.pdf", "pages": 2, "sizeMb": 1.4, "timestamp": "11.10.2026 14:30", "showShare": true },
+            { "fileName": "Spore_20261011_0915.pdf", "pages": 6, "sizeMb": 3.8, "timestamp": "11.10.2026 09:15", "showShare": true }
+          ]},
+          { "section": "RECENT DOCUMENTS", "items": [
+            { "fileName": "Spore_20261008_1847.pdf", "pages": 3, "sizeMb": 2.1, "timestamp": "08.10.2026 18:47", "showShare": true }
+          ]},
+          { "section": "ARCHIVE", "items": [
+            { "fileName": "Spore_20260921_1102.pdf", "pages": 1, "sizeMb": 0.6, "timestamp": "21.09.2026 11:02", "showShare": false, "note": "Shown partially under the dock to signal scroll" }
+          ]}
+        ],
+        "fileNamePattern": "Spore_yyyyMMdd_HHmm.pdf",
+        "bottomContentPaddingDp": 144,
+        "emptyState": "Not designed yet (to do)"
+      },
+      "bottomDock": {
+        "position": "Pinned to the bottom, overlays the list",
+        "padding": "56dp top (fade zone), 24dp start/end, 30dp bottom",
+        "background": "vertical gradient bgEdge@0% -> bgEdge@94% at 42%",
+        "child": "OutlinedPrimaryButton (CAPTURE)",
+        "action": "GmsDocumentScanning.getClient(options).getStartScanIntent() -> save PDF -> refresh list"
+      }
+    },
+
+    "ViewerScreen": {
+      "prototypeFile": "SporeViewer.dc.html",
+      "layers": ["background", "appBar", "pageStage", "footer", "vignette", "grain"],
+      "appBar": {
+        "heightDp": 68,
+        "layout": "Grid 48dp | 1fr | 48dp, 8dp horizontal padding, 8dp gaps",
+        "bottomRule": "0.5dp goldMatte",
+        "background": "transparent",
+        "children": [
+          { "type": "IconButton", "icon": "back", "sizeDp": 48, "contentDescription": "Back", "action": "popBackStack()" },
+          { "type": "Text", "text": "{fileName}", "style": "appBarTitle", "align": "center" },
+          { "type": "IconButton", "icon": "delete", "sizeDp": 48, "contentDescription": "Delete file", "action": "Confirm dialog, then delete and pop back" }
+        ]
+      },
+      "pageStage": {
+        "layout": "Column, centred in the remaining space, 30dp gap",
+        "page": {
+          "sizeDp": "282 x 398 (A4 ratio 1:1.414)",
+          "fill": "paper",
+          "render": "PdfRenderer bitmap of the current page, scaled to fit",
+          "effects": ["pageShadow"],
+          "paging": "HorizontalPager over all pages"
+        },
+        "reticles": "laserReticle on all four corners, 8 lines in total (one horizontal and one vertical per corner)",
+        "indicator": { "text": "PAGE {current} / {total}", "style": "pageIndicator" }
+      },
+      "footer": {
+        "padding": "18dp top, 24dp start/end, 30dp bottom",
+        "topRule": "0.5dp goldDividerFooter",
+        "child": "ExportButton"
+      }
+    }
+  },
+
+  "navigation": {
+    "start": "DocumentsScreen",
+    "routes": [
+      { "from": "DocumentsScreen", "trigger": "Tap a row (thumbnail or file name)", "to": "ViewerScreen/{documentId}" },
+      { "from": "ViewerScreen", "trigger": "Back icon or system back", "to": "DocumentsScreen" }
+    ]
+  },
+
+  "accessibility": {
+    "touchTargets": "Every interactive element is at least 44dp",
+    "contrast": "Ivory on bgEdge exceeds 15:1. Metadata at 42% alpha is around 6:1 on the dark centre; do not lower it.",
+    "decorative": "Grain, vignette, orb, reticles and thumbnail frames are not announced to TalkBack",
+    "contentDescriptions": ["Import from gallery", "More options", "Capture document", "Back", "Delete file"]
+  },
+
+  "openItems": [
+    "Empty state for the list (no documents yet)",
+    "Loading and progress state while ML Kit produces the PDF",
+    "Long-press / multi-select behaviour",
+    "Rename dialog and delete confirmation dialog styling (follow the same tokens: 0dp corners, 0.5dp gold borders, mono type)"
+  ]
+}
