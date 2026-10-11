@@ -71,6 +71,13 @@ fun DocumentsScreen(
         }
     }
 
+    val scanner = remember {
+        val options = GmsDocumentScannerOptions.Builder()
+            .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_PDF)
+            .build()
+        GmsDocumentScanning.getClient(options)
+    }
+
     val lifecycleOwner = LocalLifecycleOwner.current
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -105,10 +112,6 @@ fun DocumentsScreen(
         DocumentsContent(
             state = state,
             onCapture = {
-                val options = GmsDocumentScannerOptions.Builder()
-                    .setResultFormats(GmsDocumentScannerOptions.RESULT_FORMAT_PDF)
-                    .build()
-                val scanner = GmsDocumentScanning.getClient(options)
                 scanner.getStartScanIntent(context as Activity)
                     .addOnSuccessListener { intentSender ->
                         scanLauncher.launch(IntentSenderRequest.Builder(intentSender).build())
