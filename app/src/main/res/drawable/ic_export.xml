@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- tokens.stroke.iconStrokeDp: strokeWidth="1dp" -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="16dp"
+    android:height="16dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:pathData="M12 15V3"
+        android:strokeColor="#D4AF37"
+        android:strokeWidth="1"
+        android:strokeLineJoin="miter"
+        android:strokeLineCap="square" />
+    <path
+        android:pathData="M7 8l5-5 5 5"
+        android:strokeColor="#D4AF37"
+        android:strokeWidth="1"
+        android:strokeLineJoin="miter"
+        android:strokeLineCap="square" />
+    <path
+        android:pathData="M4 14v7h16v-7"
+        android:strokeColor="#D4AF37"
+        android:strokeWidth="1"
+        android:strokeLineJoin="miter"
+        android:strokeLineCap="square" />
+</vector>
