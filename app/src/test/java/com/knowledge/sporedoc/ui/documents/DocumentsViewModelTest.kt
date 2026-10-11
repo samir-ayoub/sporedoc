@@ -59,12 +59,14 @@ class DocumentsViewModelTest {
 
     private fun newViewModel(
         repository: FakeDocumentRepository,
-        documentSourceFor: (Uri) -> DocumentSource = { FakeDocumentSource("PDF-OK:1") }
+        documentSourceFor: (Uri) -> DocumentSource = { FakeDocumentSource("PDF-OK:1") },
+        shareUriFor: (DocumentId) -> Uri = { Uri.parse("content://sporedoc/${it.value}") }
     ): DocumentsViewModel = DocumentsViewModel(
         documentRepository = repository,
         groupDocumentsIntoSections = groupUseCase(),
         formatDocumentMetaLine = formatDocumentMetaLine,
-        documentSourceFor = documentSourceFor
+        documentSourceFor = documentSourceFor,
+        shareUriFor = shareUriFor
     )
 
     private fun document(
@@ -281,5 +283,244 @@ class DocumentsViewModelTest {
         viewModel.onScreenResumed()
 
         assertEquals(before, viewModel.uiState.value)
+    }
+
+    // --- onShareRequested ---
+
+    @Test
+    fun `onShareRequested emits ShareDocument with the uri resolved for this document's id`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val expectedUri = Uri.parse("content://sporedoc/contrato.pdf")
+        var requestedId: DocumentId? = null
+        val viewModel = newViewModel(repository, shareUriFor = { id ->
+            requestedId = id
+            expectedUri
+        })
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onShareRequested(doc.id)
+        runCurrent()
+
+        assertEquals(doc.id, requestedId)
+        assertEquals(listOf(DocumentsEffect.ShareDocument(expectedUri)), effects)
+        job.cancel()
+    }
+
+    // --- rename dialog: open/cancel ---
+
+    @Test
+    fun `onRenameRequested opens the rename dialog with the extension stripped from the file name`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+
+        viewModel.onRenameRequested(doc.id, doc.fileName)
+
+        val dialog = viewModel.uiState.value.renameDialog
+        assertEquals(doc.id, dialog?.documentId)
+        assertEquals("contrato", dialog?.initialName)
+        assertNull(dialog?.error)
+    }
+
+    @Test
+    fun `onRenameCancelled closes the rename dialog and renames nothing`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        viewModel.onRenameRequested(doc.id, doc.fileName)
+
+        viewModel.onRenameCancelled()
+
+        assertNull(viewModel.uiState.value.renameDialog)
+        assertTrue(repository.renameDocumentCalls.isEmpty())
+        assertEquals(listOf("contrato.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+    }
+
+    // --- rename dialog: confirm ---
+
+    @Test
+    fun `onRenameConfirmed with a valid new name closes the dialog and the list shows the new name`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        viewModel.onRenameRequested(doc.id, doc.fileName)
+
+        viewModel.onRenameConfirmed("acordo")
+        runCurrent()
+
+        assertNull(viewModel.uiState.value.renameDialog)
+        assertEquals(listOf("acordo.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+    }
+
+    @Test
+    fun `onRenameConfirmed with an empty name keeps the dialog open with InvalidName and renames nothing`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        viewModel.onRenameRequested(doc.id, doc.fileName)
+
+        viewModel.onRenameConfirmed("")
+        runCurrent()
+
+        val dialog = viewModel.uiState.value.renameDialog
+        assertEquals(RenameDialogError.InvalidName, dialog?.error)
+        assertEquals(listOf("contrato.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+    }
+
+    @Test
+    fun `onRenameConfirmed with a name made only of spaces keeps the dialog open with InvalidName`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        viewModel.onRenameRequested(doc.id, doc.fileName)
+
+        viewModel.onRenameConfirmed("   ")
+        runCurrent()
+
+        val dialog = viewModel.uiState.value.renameDialog
+        assertEquals(RenameDialogError.InvalidName, dialog?.error)
+        assertEquals(listOf("contrato.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+    }
+
+    @Test
+    fun `onRenameConfirmed with a colliding name keeps the dialog open with a distinct NameCollision error`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val repository = FakeDocumentRepository(listOf(a, b))
+        val viewModel = newViewModel(repository)
+        viewModel.onRenameRequested(a.id, a.fileName)
+
+        viewModel.onRenameConfirmed("b")
+        runCurrent()
+
+        val dialog = viewModel.uiState.value.renameDialog
+        assertEquals(RenameDialogError.NameCollision, dialog?.error)
+        assertEquals(
+            listOf("a.pdf", "b.pdf").sorted(),
+            viewModel.uiState.value.sections.single().rows.map { it.fileName }.sorted()
+        )
+    }
+
+    @Test
+    fun `onRenameConfirmed closes the dialog, emits ShowRenameError and leaves the list unchanged on an unexpected failure`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc)).apply {
+            renameDocumentResult = Result.Failure(DocumentError.FileMissing(doc.id))
+        }
+        val viewModel = newViewModel(repository)
+        viewModel.onRenameRequested(doc.id, doc.fileName)
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onRenameConfirmed("acordo")
+        runCurrent()
+
+        assertNull(viewModel.uiState.value.renameDialog)
+        assertEquals(listOf(DocumentsEffect.ShowRenameError), effects)
+        assertEquals(listOf("contrato.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+        job.cancel()
+    }
+
+    @Test
+    fun `a renamed document keeps its section, position and meta line because modifiedAt is untouched`() = runTest {
+        val recentModifiedAt =
+            ZonedDateTime.of(2026, 10, 8, 14, 30, 0, 0, ZoneId.systemDefault()).toInstant()
+        val renamedDoc = document("recent.pdf", recentModifiedAt)
+        val older = document("older_recent.pdf", recentModifiedAt.minusSeconds(3600))
+        val repository = FakeDocumentRepository(listOf(renamedDoc, older))
+        val viewModel = newViewModel(repository)
+        viewModel.onRenameRequested(renamedDoc.id, renamedDoc.fileName)
+
+        viewModel.onRenameConfirmed("relatorio")
+        runCurrent()
+
+        val recentSection = viewModel.uiState.value.sections.single { it.label == SectionLabel.RECENT_DOCUMENTS }
+        assertEquals(listOf("relatorio.pdf", "older_recent.pdf"), recentSection.rows.map { it.fileName })
+        assertTrue(recentSection.rows.first().metaLine.contains("08.10.2026"))
+    }
+
+    // --- delete flow ---
+
+    @Test
+    fun `onDeleteRequested sets pendingDeleteId without deleting anything`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+
+        viewModel.onDeleteRequested(doc.id)
+
+        assertEquals(doc.id, viewModel.uiState.value.pendingDeleteId)
+        assertTrue(repository.deleteDocumentCalls.isEmpty())
+    }
+
+    @Test
+    fun `onDeleteCancelled clears pendingDeleteId and deletes nothing`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        viewModel.onDeleteRequested(doc.id)
+
+        viewModel.onDeleteCancelled()
+
+        assertNull(viewModel.uiState.value.pendingDeleteId)
+        assertTrue(repository.deleteDocumentCalls.isEmpty())
+        assertEquals(listOf("contrato.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+    }
+
+    @Test
+    fun `onDeleteConfirmed deletes the document, clears pendingDeleteId and the list no longer shows it`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        viewModel.onDeleteRequested(doc.id)
+
+        viewModel.onDeleteConfirmed()
+        runCurrent()
+
+        assertEquals(listOf(doc.id), repository.deleteDocumentCalls)
+        assertNull(viewModel.uiState.value.pendingDeleteId)
+        assertTrue(viewModel.uiState.value.sections.isEmpty())
+    }
+
+    @Test
+    fun `onDeleteConfirmed drops the section header when the deleted document was its only one`() = runTest {
+        val onlyInToday = document("today.pdf", fixedNow)
+        val recent = document("recent.pdf", fixedNow.minusSeconds(60L * 60 * 24 * 10))
+        val repository = FakeDocumentRepository(listOf(onlyInToday, recent))
+        val viewModel = newViewModel(repository)
+        viewModel.onDeleteRequested(onlyInToday.id)
+
+        viewModel.onDeleteConfirmed()
+        runCurrent()
+
+        val sections = viewModel.uiState.value.sections
+        assertEquals(listOf(SectionLabel.RECENT_DOCUMENTS), sections.map { it.label })
+    }
+
+    @Test
+    fun `onDeleteConfirmed on a document already missing on disk reloads the list without it and emits ShowDeleteError`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc)).apply {
+            deleteDocumentResult = Result.Failure(DocumentError.FileMissing(doc.id))
+        }
+        val viewModel = newViewModel(repository)
+        viewModel.onDeleteRequested(doc.id)
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+        // simulate the file having actually disappeared from disk, independent of the stubbed result
+        repository.removeDocument(doc.id)
+
+        viewModel.onDeleteConfirmed()
+        runCurrent()
+
+        assertNull(viewModel.uiState.value.pendingDeleteId)
+        assertEquals(listOf(DocumentsEffect.ShowDeleteError), effects)
+        assertTrue(viewModel.uiState.value.sections.isEmpty())
+        job.cancel()
     }
 }

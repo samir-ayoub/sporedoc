@@ -11,6 +11,18 @@
     <string name="capture_label">CAPTURE</string>
     <string name="capture_content_description">Capture document</string>
     <string name="capture_error_message">Couldn\'t save the scanned document. Please try again.</string>
+    <string name="share_text_action_label">[ SHARE ]</string>
+    <string name="more_options_content_description">More options</string>
+    <string name="more_options_rename">Rename</string>
+    <string name="more_options_share">Share</string>
+    <string name="more_options_delete">Delete</string>
+    <string name="delete_error_message">Couldn\'t delete the document. The list has been refreshed.</string>
+    <string name="rename_error_message">Couldn\'t rename the document. Please try again.</string>
+    <string name="rename_dialog_title">Rename document</string>
+    <string name="rename_dialog_confirm">RENAME</string>
+    <string name="rename_dialog_cancel">CANCEL</string>
+    <string name="rename_dialog_error_invalid_name">Please enter a name.</string>
+    <string name="rename_dialog_error_name_collision">A document with that name already exists.</string>
 
     <!-- ViewerScreen -->
     <string name="viewer_back_content_description">Back</string>
@@ -19,8 +31,10 @@
     <string name="viewer_export_label">EXPORT DOCUMENT</string>
     <string name="viewer_export_suffix"> (PDF)</string>
     <string name="viewer_load_error_message">This document couldn\'t be opened.</string>
-    <string name="viewer_delete_dialog_title">Delete document?</string>
-    <string name="viewer_delete_dialog_body">This file will be permanently deleted.</string>
-    <string name="viewer_delete_dialog_confirm">DELETE</string>
-    <string name="viewer_delete_dialog_cancel">CANCEL</string>
+
+    <!-- Shared dialogs -->
+    <string name="delete_dialog_title">Delete document?</string>
+    <string name="delete_dialog_body">This file will be permanently deleted.</string>
+    <string name="delete_dialog_confirm">DELETE</string>
+    <string name="delete_dialog_cancel">CANCEL</string>
 </resources>
