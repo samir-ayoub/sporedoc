@@ -20,6 +20,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.knowledge.sporedoc.R
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.ui.components.DeleteConfirmationDialog
 import com.knowledge.sporedoc.ui.theme.SporeDocColors
 import com.knowledge.sporedoc.ui.theme.SporeDocSpacing
 import com.knowledge.sporedoc.ui.theme.SporeDocTheme
@@ -40,6 +41,13 @@ fun DocumentsContent(
     onCapture: () -> Unit,
     loadThumbnail: suspend (DocumentId) -> PageImage?,
     onOpenDocument: (DocumentId, String) -> Unit = { _, _ -> },
+    onShareRequested: (DocumentId) -> Unit = {},
+    onRenameRequested: (DocumentId, String) -> Unit = { _, _ -> },
+    onRenameConfirmed: (String) -> Unit = {},
+    onRenameCancelled: () -> Unit = {},
+    onDeleteRequested: (DocumentId) -> Unit = {},
+    onDeleteConfirmed: () -> Unit = {},
+    onDeleteCancelled: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -51,12 +59,29 @@ fun DocumentsContent(
                 state = state,
                 loadThumbnail = loadThumbnail,
                 onOpenDocument = onOpenDocument,
+                onShareRequested = onShareRequested,
+                onRenameRequested = onRenameRequested,
+                onDeleteRequested = onDeleteRequested,
                 modifier = Modifier.weight(1f)
             )
         }
         BottomDock(onCapture = onCapture, modifier = Modifier.align(Alignment.BottomCenter))
         Vignette()
         Grain()
+    }
+
+    val renameDialog = state.renameDialog
+    if (renameDialog != null) {
+        RenameDialog(
+            initialName = renameDialog.initialName,
+            error = renameDialog.error,
+            onConfirm = onRenameConfirmed,
+            onDismiss = onRenameCancelled
+        )
+    }
+
+    if (state.pendingDeleteId != null) {
+        DeleteConfirmationDialog(onConfirm = onDeleteConfirmed, onDismiss = onDeleteCancelled)
     }
 }
 
@@ -89,6 +114,9 @@ private fun DocumentsBody(
     state: DocumentsUiState,
     loadThumbnail: suspend (DocumentId) -> PageImage?,
     onOpenDocument: (DocumentId, String) -> Unit,
+    onShareRequested: (DocumentId) -> Unit,
+    onRenameRequested: (DocumentId, String) -> Unit,
+    onDeleteRequested: (DocumentId) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (state.sections.isEmpty()) {
@@ -107,7 +135,14 @@ private fun DocumentsBody(
                 DocumentSectionHeader(label = section.label)
             }
             items(section.rows, key = { it.id.value }) { row ->
-                DocumentRow(row = row, loadThumbnail = loadThumbnail, onOpenDocument = onOpenDocument)
+                DocumentRow(
+                    row = row,
+                    loadThumbnail = loadThumbnail,
+                    onOpenDocument = onOpenDocument,
+                    onShareRequested = onShareRequested,
+                    onRenameRequested = onRenameRequested,
+                    onDeleteRequested = onDeleteRequested
+                )
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.knowledge.sporedoc.ui.documents
 
 import android.app.Activity
+import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,6 +41,8 @@ fun DocumentsScreen(
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val errorMessage = stringResource(R.string.capture_error_message)
+    val deleteErrorMessage = stringResource(R.string.delete_error_message)
+    val renameErrorMessage = stringResource(R.string.rename_error_message)
 
     val scanLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
@@ -74,6 +77,16 @@ fun DocumentsScreen(
         viewModel.effects.collect { effect ->
             when (effect) {
                 DocumentsEffect.ShowCaptureError -> snackbarHostState.showSnackbar(errorMessage)
+                DocumentsEffect.ShowDeleteError -> snackbarHostState.showSnackbar(deleteErrorMessage)
+                DocumentsEffect.ShowRenameError -> snackbarHostState.showSnackbar(renameErrorMessage)
+                is DocumentsEffect.ShareDocument -> {
+                    val intent = Intent(Intent.ACTION_SEND).apply {
+                        type = "application/pdf"
+                        putExtra(Intent.EXTRA_STREAM, effect.uri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(Intent.createChooser(intent, null))
+                }
             }
         }
     }
@@ -95,7 +108,14 @@ fun DocumentsScreen(
                     }
             },
             loadThumbnail = viewModel::loadThumbnail,
-            onOpenDocument = onOpenDocument
+            onOpenDocument = onOpenDocument,
+            onShareRequested = viewModel::onShareRequested,
+            onRenameRequested = viewModel::onRenameRequested,
+            onRenameConfirmed = viewModel::onRenameConfirmed,
+            onRenameCancelled = viewModel::onRenameCancelled,
+            onDeleteRequested = viewModel::onDeleteRequested,
+            onDeleteConfirmed = viewModel::onDeleteConfirmed,
+            onDeleteCancelled = viewModel::onDeleteCancelled
         )
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }

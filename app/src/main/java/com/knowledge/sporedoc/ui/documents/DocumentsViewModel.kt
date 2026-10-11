@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.repository.DocumentError
 import com.knowledge.sporedoc.domain.repository.DocumentRepository
 import com.knowledge.sporedoc.domain.usecase.FormatDocumentMetaLine
 import com.knowledge.sporedoc.domain.usecase.GroupDocumentsIntoSections
@@ -27,7 +28,8 @@ class DocumentsViewModel(
     private val documentRepository: DocumentRepository,
     private val groupDocumentsIntoSections: GroupDocumentsIntoSections,
     private val formatDocumentMetaLine: FormatDocumentMetaLine,
-    private val documentSourceFor: (Uri) -> DocumentSource
+    private val documentSourceFor: (Uri) -> DocumentSource,
+    private val shareUriFor: (DocumentId) -> Uri
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DocumentsUiState())
@@ -79,9 +81,87 @@ class DocumentsViewModel(
         viewModelScope.launch { refresh() }
     }
 
+    /** Requests the native share sheet be opened for this document's PDF. */
+    fun onShareRequested(id: DocumentId) {
+        viewModelScope.launch {
+            _effects.send(DocumentsEffect.ShareDocument(shareUriFor(id)))
+        }
+    }
+
+    /** Opens the rename dialog with the extension stripped from [fileName]. */
+    fun onRenameRequested(id: DocumentId, fileName: String) {
+        _uiState.value = _uiState.value.copy(
+            renameDialog = RenameDialogUiState(
+                documentId = id,
+                initialName = stripPdfExtension(fileName)
+            )
+        )
+    }
+
+    /** Closes the rename dialog without renaming anything. */
+    fun onRenameCancelled() {
+        _uiState.value = _uiState.value.copy(renameDialog = null)
+    }
+
+    /** Attempts to rename the document currently open in the rename dialog, to [newName]. */
+    fun onRenameConfirmed(newName: String) {
+        val dialog = _uiState.value.renameDialog ?: return
+        viewModelScope.launch {
+            when (val result = documentRepository.renameDocument(dialog.documentId, newName)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(renameDialog = null)
+                    refresh()
+                }
+                is Result.Failure -> when (result.error) {
+                    is DocumentError.InvalidName -> _uiState.value = _uiState.value.copy(
+                        renameDialog = dialog.copy(error = RenameDialogError.InvalidName)
+                    )
+                    is DocumentError.NameCollision -> _uiState.value = _uiState.value.copy(
+                        renameDialog = dialog.copy(error = RenameDialogError.NameCollision)
+                    )
+                    else -> {
+                        _uiState.value = _uiState.value.copy(renameDialog = null)
+                        _effects.send(DocumentsEffect.ShowRenameError)
+                    }
+                }
+            }
+        }
+    }
+
+    /** Opens the shared delete-confirmation dialog for this document. */
+    fun onDeleteRequested(id: DocumentId) {
+        _uiState.value = _uiState.value.copy(pendingDeleteId = id)
+    }
+
+    /** Closes the delete-confirmation dialog without deleting anything. */
+    fun onDeleteCancelled() {
+        _uiState.value = _uiState.value.copy(pendingDeleteId = null)
+    }
+
+    /** Deletes the document pending confirmation, reloading the list either way. */
+    fun onDeleteConfirmed() {
+        val id = _uiState.value.pendingDeleteId ?: return
+        viewModelScope.launch {
+            when (documentRepository.deleteDocument(id)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(pendingDeleteId = null)
+                    refresh()
+                }
+                is Result.Failure -> {
+                    _uiState.value = _uiState.value.copy(pendingDeleteId = null)
+                    refresh()
+                    _effects.send(DocumentsEffect.ShowDeleteError)
+                }
+            }
+        }
+    }
+
+    private fun stripPdfExtension(fileName: String): String =
+        if (fileName.endsWith(".pdf")) fileName.removeSuffix(".pdf") else fileName
+
     private suspend fun refresh() {
         when (val result = documentRepository.listDocuments()) {
-            is Result.Success -> _uiState.value = DocumentsUiState(sections = buildSections(result.value))
+            is Result.Success -> _uiState.value = _uiState.value.copy(sections = buildSections(result.value))
             is Result.Failure -> Unit // keep the previous state; no AC in this delivery covers this case
         }
     }

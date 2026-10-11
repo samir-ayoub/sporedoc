@@ -42,6 +42,12 @@ class FakeDocumentRepository(
     /** Record of every id passed to [deleteDocument], for assertions on when it was (not) called. */
     val deleteDocumentCalls = mutableListOf<DocumentId>()
 
+    /** When set, returned by every [renameDocument] call instead of the default rename-in-place. */
+    var renameDocumentResult: Result<Document, DocumentError>? = null
+
+    /** Record of every (id, newName) pair passed to [renameDocument]. */
+    val renameDocumentCalls = mutableListOf<Pair<DocumentId, String>>()
+
     override suspend fun listDocuments(): Result<List<Document>, DocumentError> =
         listDocumentsResult ?: Result.Success(documents.toList())
 
@@ -71,8 +77,24 @@ class FakeDocumentRepository(
         return Result.Success(added)
     }
 
-    override suspend fun renameDocument(id: DocumentId, newName: String): Result<Document, DocumentError> =
-        Result.Failure(DocumentError.InvalidName)
+    override suspend fun renameDocument(id: DocumentId, newName: String): Result<Document, DocumentError> {
+        renameDocumentCalls.add(id to newName)
+        renameDocumentResult?.let { return it }
+
+        if (newName.isBlank()) return Result.Failure(DocumentError.InvalidName)
+
+        val existing = documents.find { it.id == id } ?: return Result.Failure(DocumentError.FileMissing(id))
+        val finalName = if (newName.endsWith(".pdf")) newName else "$newName.pdf"
+
+        if (finalName != existing.fileName && documents.any { it.fileName == finalName }) {
+            return Result.Failure(DocumentError.NameCollision(finalName))
+        }
+
+        val renamed = existing.copy(id = DocumentId(finalName), fileName = finalName)
+        documents.remove(existing)
+        documents.add(renamed)
+        return Result.Success(renamed)
+    }
 
     override suspend fun deleteDocument(id: DocumentId): Result<Unit, DocumentError> {
         deleteDocumentCalls.add(id)
