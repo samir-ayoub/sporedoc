@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import com.knowledge.sporedoc.data.file.AndroidPdfFileAccess
 import com.knowledge.sporedoc.data.file.UriDocumentSource
+import com.knowledge.sporedoc.data.file.displayNameFor
 import com.knowledge.sporedoc.data.repository.FileDocumentRepository
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
@@ -39,6 +40,11 @@ class AppContainer(context: Context) {
     /** Wires a scanner-result `Uri` to the domain's [DocumentSource] seam. */
     val documentSourceFor: (Uri) -> DocumentSource = { uri ->
         UriDocumentSource(context.contentResolver, uri)
+    }
+
+    /** Resolves a picked content `Uri`'s original display name, to keep it on import. */
+    val displayNameFor: (Uri) -> String? = { uri ->
+        displayNameFor(context.contentResolver, uri)
     }
 
     /** Resolves a shareable `content://` Uri for a document's PDF file, via [FileProvider]. */

@@ -58,7 +58,8 @@ class FileDocumentRepository(
         source: DocumentSource,
         requestedName: String?
     ): Result<Document, DocumentError> = withContext(ioDispatcher) {
-        val desiredName = requestedName ?: generateName(clock())
+        val now = clock()
+        val desiredName = requestedName ?: generateName(now)
         val finalName = resolveAvailableName(desiredName)
         val targetFile = File(documentsDir, finalName)
 
@@ -66,7 +67,16 @@ class FileDocumentRepository(
             targetFile.outputStream().use { output -> input.copyTo(output) }
         }
 
-        Result.Success(toDocument(targetFile))
+        when (pdfFileAccess.pageCount(targetFile)) {
+            is Result.Success -> {
+                targetFile.setLastModified(now.toEpochMilli())
+                Result.Success(toDocument(targetFile))
+            }
+            is Result.Failure -> {
+                targetFile.delete()
+                Result.Failure(DocumentError.UnreadableFile(DocumentId(finalName)))
+            }
+        }
     }
 
     override suspend fun renameDocument(id: DocumentId, newName: String): Result<Document, DocumentError> =

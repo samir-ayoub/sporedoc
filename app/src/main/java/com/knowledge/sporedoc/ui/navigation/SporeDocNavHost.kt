@@ -38,7 +38,8 @@ fun SporeDocNavHost(
                         groupDocumentsIntoSections = appContainer.groupDocumentsIntoSections,
                         formatDocumentMetaLine = appContainer.formatDocumentMetaLine,
                         documentSourceFor = appContainer.documentSourceFor,
-                        shareUriFor = appContainer.shareUriFor
+                        shareUriFor = appContainer.shareUriFor,
+                        displayNameFor = appContainer.displayNameFor
                     )
                 }
             }
