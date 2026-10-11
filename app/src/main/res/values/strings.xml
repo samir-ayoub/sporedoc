@@ -11,4 +11,16 @@
     <string name="capture_label">CAPTURE</string>
     <string name="capture_content_description">Capture document</string>
     <string name="capture_error_message">Couldn\'t save the scanned document. Please try again.</string>
+
+    <!-- ViewerScreen -->
+    <string name="viewer_back_content_description">Back</string>
+    <string name="viewer_delete_content_description">Delete file</string>
+    <string name="viewer_page_indicator">PAGE %1$d / %2$d</string>
+    <string name="viewer_export_label">EXPORT DOCUMENT</string>
+    <string name="viewer_export_suffix"> (PDF)</string>
+    <string name="viewer_load_error_message">This document couldn\'t be opened.</string>
+    <string name="viewer_delete_dialog_title">Delete document?</string>
+    <string name="viewer_delete_dialog_body">This file will be permanently deleted.</string>
+    <string name="viewer_delete_dialog_confirm">DELETE</string>
+    <string name="viewer_delete_dialog_cancel">CANCEL</string>
 </resources>

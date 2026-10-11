@@ -1,0 +1,239 @@
+package com.knowledge.sporedoc.ui.viewer
+
+import android.net.Uri
+import com.knowledge.sporedoc.domain.model.DocumentId
+import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.repository.DocumentError
+import com.knowledge.sporedoc.domain.util.Result
+import com.knowledge.sporedoc.ui.documents.FakeDocumentRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+
+/**
+ * Tests for [ViewerViewModel]: initial load (success/failure), page navigation state,
+ * export, and the delete-confirmation flow.
+ *
+ * Covers (from SD-4's acceptance criteria):
+ * - "Dado um documento de 6 páginas aberto no visualizador, quando o ecrã é composto,
+ *   então o indicador mostra PAGE 1 / 6 e a página apresentada é a primeira."
+ * - "Dado um documento de 6 páginas, quando se avança duas páginas no paginador, então
+ *   o indicador mostra PAGE 3 / 6."
+ * - "Dado um documento de 1 página, quando o ecrã é composto, então o indicador mostra
+ *   PAGE 1 / 1."
+ * - "Dado um documento aberto no visualizador, quando se toca no botão de exportar,
+ *   então é pedida a abertura da folha de partilha nativa com o ficheiro PDF desse documento."
+ * - "Dado um documento aberto no visualizador, quando se toca no ícone de apagar, então
+ *   aparece o diálogo de confirmação e o documento ainda não foi apagado."
+ * - "Dado o diálogo de confirmação aberto, quando se confirma, então o documento é
+ *   apagado [...]."
+ * - "Dado o diálogo de confirmação aberto, quando se cancela, então o diálogo fecha [...]
+ *   e o documento continua a existir."
+ * - "Dado um identificador de um documento que já não existe no disco [...] então o ecrã
+ *   volta à lista e é mostrada uma mensagem de erro." (FileMissing)
+ * - "Dado um ficheiro que não é um PDF válido [...] então o ecrã volta à lista e é
+ *   mostrada uma mensagem de erro." (UnreadableFile)
+ *
+ * Navigation itself (tap-to-open, back icon, system back), the share-sheet intent, the
+ * dialog's visuals and TalkBack announcements have no JVM-testable seam in this project
+ * (no Robolectric, no `androidx.compose.ui.test` dependency) and are exercised only
+ * through "Validação manual" / the NavHost wiring, per the Architect's design notes.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+class ViewerViewModelTest {
+
+    private val documentId = DocumentId("contrato.pdf")
+    private val fileName = "contrato.pdf"
+
+    @Before
+    fun setUp() {
+        Dispatchers.setMain(UnconfinedTestDispatcher())
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
+    private fun newViewModel(
+        repository: FakeDocumentRepository,
+        shareUriFor: (DocumentId) -> Uri = { Uri.parse("content://sporedoc/${it.value}") }
+    ): ViewerViewModel = ViewerViewModel(
+        documentId = documentId,
+        fileName = fileName,
+        documentRepository = repository,
+        shareUriFor = shareUriFor
+    )
+
+    private fun repositoryWithPageCount(count: Int): FakeDocumentRepository =
+        FakeDocumentRepository().apply {
+            pageCountResults = mapOf(documentId to Result.Success(count))
+        }
+
+    // --- initial load ---
+
+    @Test
+    fun `initial state carries the file name and starts on page 1 of the loaded page count`() = runTest {
+        val repository = repositoryWithPageCount(6)
+
+        val viewModel = newViewModel(repository)
+
+        val state = viewModel.uiState.value
+        assertEquals(fileName, state.fileName)
+        assertEquals(6, state.pageCount)
+        assertEquals(1, state.currentPage)
+    }
+
+    @Test
+    fun `a single-page document reports PAGE 1 of 1`() = runTest {
+        val repository = repositoryWithPageCount(1)
+
+        val viewModel = newViewModel(repository)
+
+        val state = viewModel.uiState.value
+        assertEquals(1, state.pageCount)
+        assertEquals(1, state.currentPage)
+    }
+
+    @Test
+    fun `a missing document emits LoadFailed and does not populate page state`() = runTest {
+        val repository = FakeDocumentRepository().apply {
+            pageCountResults = mapOf(documentId to Result.Failure(DocumentError.FileMissing(documentId)))
+        }
+        val effects = mutableListOf<ViewerEffect>()
+        val viewModel = newViewModel(repository)
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        assertEquals(listOf(ViewerEffect.LoadFailed), effects)
+        assertEquals(0, viewModel.uiState.value.pageCount)
+        job.cancel()
+    }
+
+    @Test
+    fun `a PDF that cannot be read emits LoadFailed`() = runTest {
+        val repository = FakeDocumentRepository().apply {
+            pageCountResults = mapOf(documentId to Result.Failure(DocumentError.UnreadableFile(documentId)))
+        }
+        val effects = mutableListOf<ViewerEffect>()
+        val viewModel = newViewModel(repository)
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        assertEquals(listOf(ViewerEffect.LoadFailed), effects)
+        job.cancel()
+    }
+
+    // --- page navigation ---
+
+    @Test
+    fun `onPageChanged with a 0-based index 2 moves the 1-based current page to 3`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+
+        viewModel.onPageChanged(2)
+
+        assertEquals(3, viewModel.uiState.value.currentPage)
+        assertEquals(6, viewModel.uiState.value.pageCount)
+    }
+
+    @Test
+    fun `loadPage returns the page image when the repository succeeds`() = runTest {
+        val image = PageImage(bytes = byteArrayOf(1, 2, 3), width = 10, height = 20)
+        val repository = repositoryWithPageCount(6).apply {
+            pageImages = mapOf((documentId to 0) to Result.Success(image))
+        }
+        val viewModel = newViewModel(repository)
+
+        val result = viewModel.loadPage(0)
+
+        assertEquals(image, result)
+    }
+
+    @Test
+    fun `loadPage returns null when the repository fails`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+
+        val result = viewModel.loadPage(0)
+
+        assertNull(result)
+    }
+
+    // --- export ---
+
+    @Test
+    fun `onExportRequested emits ShareDocument with the uri resolved for this document's id`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val expectedUri = Uri.parse("content://sporedoc/contrato.pdf")
+        var requestedId: DocumentId? = null
+        val viewModel = newViewModel(repository, shareUriFor = { id ->
+            requestedId = id
+            expectedUri
+        })
+        val effects = mutableListOf<ViewerEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onExportRequested()
+        runCurrent()
+
+        assertEquals(documentId, requestedId)
+        assertEquals(listOf(ViewerEffect.ShareDocument(expectedUri)), effects)
+        job.cancel()
+    }
+
+    // --- delete flow ---
+
+    @Test
+    fun `onDeleteRequested shows the confirmation dialog without deleting anything`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+
+        viewModel.onDeleteRequested()
+
+        assertTrue(viewModel.uiState.value.isDeleteDialogVisible)
+        assertTrue(repository.deleteDocumentCalls.isEmpty())
+    }
+
+    @Test
+    fun `onDeleteConfirmed deletes the document, closes the dialog and emits DocumentDeleted`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onDeleteRequested()
+        val effects = mutableListOf<ViewerEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onDeleteConfirmed()
+        runCurrent()
+
+        assertEquals(listOf(documentId), repository.deleteDocumentCalls)
+        assertEquals(listOf(ViewerEffect.DocumentDeleted), effects)
+        assertEquals(false, viewModel.uiState.value.isDeleteDialogVisible)
+        job.cancel()
+    }
+
+    @Test
+    fun `onDeleteCancelled closes the dialog and deletes nothing`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onDeleteRequested()
+
+        viewModel.onDeleteCancelled()
+
+        assertEquals(false, viewModel.uiState.value.isDeleteDialogVisible)
+        assertTrue(repository.deleteDocumentCalls.isEmpty())
+    }
+}

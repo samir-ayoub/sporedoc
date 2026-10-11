@@ -25,13 +25,17 @@ import com.google.mlkit.vision.documentscanner.GmsDocumentScannerOptions
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanning
 import com.google.mlkit.vision.documentscanner.GmsDocumentScanningResult
 import com.knowledge.sporedoc.R
+import com.knowledge.sporedoc.domain.model.DocumentId
 
 /**
  * Stateful glue: collects [DocumentsViewModel]'s state/effects, owns the ML Kit Document
  * Scanner `ActivityResultLauncher`, the resume-reload lifecycle observer, and error display.
  */
 @Composable
-fun DocumentsScreen(viewModel: DocumentsViewModel) {
+fun DocumentsScreen(
+    viewModel: DocumentsViewModel,
+    onOpenDocument: (DocumentId, String) -> Unit = { _, _ -> }
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -90,7 +94,8 @@ fun DocumentsScreen(viewModel: DocumentsViewModel) {
                         viewModel.onScanFailed()
                     }
             },
-            loadThumbnail = viewModel::loadThumbnail
+            loadThumbnail = viewModel::loadThumbnail,
+            onOpenDocument = onOpenDocument
         )
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }

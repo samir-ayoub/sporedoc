@@ -30,14 +30,26 @@ class FakeDocumentRepository(
     /** Thumbnails keyed by document id; missing entries fail with [DocumentError.FileMissing]. */
     var thumbnails: Map<DocumentId, Result<PageImage, DocumentError>> = emptyMap()
 
+    /** Page counts keyed by document id; missing entries fail with [DocumentError.FileMissing]. */
+    var pageCountResults: Map<DocumentId, Result<Int, DocumentError>> = emptyMap()
+
+    /** Page images keyed by (document id, page index); missing entries fail with [DocumentError.FileMissing]. */
+    var pageImages: Map<Pair<DocumentId, Int>, Result<PageImage, DocumentError>> = emptyMap()
+
+    /** When set, returned by every [deleteDocument] call instead of the default remove-and-succeed. */
+    var deleteDocumentResult: Result<Unit, DocumentError>? = null
+
+    /** Record of every id passed to [deleteDocument], for assertions on when it was (not) called. */
+    val deleteDocumentCalls = mutableListOf<DocumentId>()
+
     override suspend fun listDocuments(): Result<List<Document>, DocumentError> =
         listDocumentsResult ?: Result.Success(documents.toList())
 
     override suspend fun getPageCount(id: DocumentId): Result<Int, DocumentError> =
-        Result.Failure(DocumentError.FileMissing(id))
+        pageCountResults[id] ?: Result.Failure(DocumentError.FileMissing(id))
 
     override suspend fun getPageImage(id: DocumentId, pageIndex: Int): Result<PageImage, DocumentError> =
-        thumbnails[id] ?: Result.Failure(DocumentError.FileMissing(id))
+        pageImages[id to pageIndex] ?: thumbnails[id] ?: Result.Failure(DocumentError.FileMissing(id))
 
     override suspend fun getThumbnail(id: DocumentId): Result<PageImage, DocumentError> =
         thumbnails[id] ?: Result.Failure(DocumentError.FileMissing(id))
@@ -62,8 +74,12 @@ class FakeDocumentRepository(
     override suspend fun renameDocument(id: DocumentId, newName: String): Result<Document, DocumentError> =
         Result.Failure(DocumentError.InvalidName)
 
-    override suspend fun deleteDocument(id: DocumentId): Result<Unit, DocumentError> =
-        Result.Failure(DocumentError.FileMissing(id))
+    override suspend fun deleteDocument(id: DocumentId): Result<Unit, DocumentError> {
+        deleteDocumentCalls.add(id)
+        deleteDocumentResult?.let { return it }
+        documents.removeAll { it.id == id }
+        return Result.Success(Unit)
+    }
 
     /** Simulates a document disappearing from disk between two `listDocuments` calls. */
     fun removeDocument(id: DocumentId) {
