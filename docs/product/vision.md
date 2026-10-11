@@ -26,7 +26,7 @@ A app tem dois ecrãs próprios: lista de documentos (`DocumentsScreen`) e visua
 2. **Capturar.** O botão CAPTURE abre o ML Kit Document Scanner. O resultado é guardado como PDF no armazenamento interno da app, e a lista atualiza-se. A importação de imagens da galeria é feita pela opção nativa do próprio scanner.
 3. **Listar.** A lista mostra todos os PDFs, do mais recente para o mais antigo, agrupados em TODAY (mesmo dia de calendário), RECENT DOCUMENTS (últimos 30 dias, excluindo hoje) e ARCHIVE (mais antigos). Cada linha mostra a miniatura da primeira página, o nome e `{páginas} PP / {tamanho} MB / {dd.MM.yyyy HH:mm}`. Com a lista vazia, aparece um estado vazio com uma linha de texto e o CAPTURE visível.
 4. **Ver.** Tocar numa linha abre o visualizador com as páginas em paginação horizontal e o indicador `PAGE x / y`.
-5. **Partilhar / exportar.** "[ SHARE ]" na linha, "Share" no menu ⋮ e "EXPORT DOCUMENT (PDF)" no visualizador abrem todos a share sheet nativa do Android com o PDF.
+5. **Partilhar / exportar.** "[ SHARE ]" na linha, "Share" no menu ⋮ e "SHARE DOCUMENT (PDF)" no visualizador abrem todos a share sheet nativa do Android com o PDF.
 6. **Gerir.** O menu ⋮ de cada linha tem Rename, Share e Delete. O ícone de apagar no visualizador também apaga. Apagar pede sempre confirmação.
 7. **Importar PDF.** O ícone de importar (canto superior direito) escolhe um PDF existente no telemóvel e copia-o para a biblioteca da app.
 

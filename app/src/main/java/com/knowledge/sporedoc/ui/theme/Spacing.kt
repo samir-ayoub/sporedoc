@@ -46,6 +46,8 @@ object SporeDocSpacing {
     val viewerAppBarHeightDp: Dp = 68.dp
     val viewerAppBarIconColumnWidthDp: Dp = 48.dp
     val viewerAppBarHorizontalPaddingDp: Dp = 8.dp
+
+    val viewerAppBarVerticalPaddingDp: Dp = 8.dp
     val viewerAppBarColumnGapDp: Dp = 8.dp
 
     // screens.ViewerScreen.pageStage

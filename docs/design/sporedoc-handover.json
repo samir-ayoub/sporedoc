@@ -174,7 +174,7 @@
       "usedIn": "ViewerScreen",
       "size": "fillMaxWidth x 58dp",
       "surface": "brushedBrass",
-      "content": "export icon + 14dp gap + 'EXPORT DOCUMENT' + ' (PDF)' in ivoryMuted",
+      "content": "export icon + 14dp gap + 'SHARE DOCUMENT' + ' (PDF)' in ivoryMuted",
       "textStyle": "exportButton",
       "shape": "RectangleShape",
       "action": "Android share sheet (Intent.createChooser) with the PDF"

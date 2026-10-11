@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -48,7 +47,7 @@ fun ViewerAppBar(
                 .height(SporeDocSpacing.viewerAppBarHeightDp)
                 .padding(horizontal = SporeDocSpacing.viewerAppBarHorizontalPaddingDp),
             horizontalArrangement = Arrangement.spacedBy(SporeDocSpacing.viewerAppBarColumnGapDp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Bottom
         ) {
             IconColumn(
                 contentDescription = stringResource(R.string.viewer_back_content_description),
@@ -61,7 +60,9 @@ fun ViewerAppBar(
                 maxLines = SporeDocTypography.appBarTitleMaxLines,
                 overflow = SporeDocTypography.appBarTitleOverflow,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = SporeDocSpacing.viewerAppBarVerticalPaddingDp)
             )
 
             IconColumn(
