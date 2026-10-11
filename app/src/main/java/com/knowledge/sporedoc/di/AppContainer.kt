@@ -1,8 +1,11 @@
 package com.knowledge.sporedoc.di
 
 import android.content.Context
+import android.net.Uri
 import com.knowledge.sporedoc.data.file.AndroidPdfFileAccess
+import com.knowledge.sporedoc.data.file.UriDocumentSource
 import com.knowledge.sporedoc.data.repository.FileDocumentRepository
+import com.knowledge.sporedoc.domain.model.DocumentSource
 import com.knowledge.sporedoc.domain.repository.DocumentRepository
 import com.knowledge.sporedoc.domain.usecase.FormatDocumentMetaLine
 import com.knowledge.sporedoc.domain.usecase.GroupDocumentsIntoSections
@@ -27,4 +30,9 @@ class AppContainer(context: Context) {
     val groupDocumentsIntoSections: GroupDocumentsIntoSections = GroupDocumentsIntoSections(clock)
 
     val formatDocumentMetaLine: FormatDocumentMetaLine = FormatDocumentMetaLine()
+
+    /** Wires a scanner-result `Uri` to the domain's [DocumentSource] seam. */
+    val documentSourceFor: (Uri) -> DocumentSource = { uri ->
+        UriDocumentSource(context.contentResolver, uri)
+    }
 }
