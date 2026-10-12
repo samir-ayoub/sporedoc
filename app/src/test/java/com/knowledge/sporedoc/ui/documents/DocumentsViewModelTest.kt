@@ -354,6 +354,132 @@ class DocumentsViewModelTest {
         job.cancel()
     }
 
+    // --- onExternalDocumentReceived (SD-12) ---
+
+    @Test
+    fun `onExternalDocumentReceived adds the document keeping the resolved display name and opens it in the viewer`() = runTest {
+        val repository = FakeDocumentRepository(emptyList())
+        var receivedUriForSource: Uri? = null
+        var receivedUriForName: Uri? = null
+        val viewModel = newViewModel(
+            repository,
+            documentSourceFor = { uri ->
+                receivedUriForSource = uri
+                FakeDocumentSource("PDF-OK:4")
+            },
+            displayNameFor = { uri ->
+                receivedUriForName = uri
+                "fatura.pdf"
+            }
+        )
+        val externalUri = Uri.parse("content://external-pdf")
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onExternalDocumentReceived(externalUri)
+        runCurrent()
+
+        assertEquals(externalUri, receivedUriForSource)
+        assertEquals(externalUri, receivedUriForName)
+        assertEquals(1, repository.addDocumentCalls.size)
+        assertEquals("fatura.pdf", repository.addDocumentCalls.single().second)
+        val todaySection = viewModel.uiState.value.sections.single { it.label == SectionLabel.TODAY }
+        assertEquals(listOf("Spore_20261011_1430.pdf"), todaySection.rows.map { it.fileName })
+        assertEquals(
+            listOf(DocumentsEffect.OpenDocument(DocumentId("Spore_20261011_1430.pdf"), "Spore_20261011_1430.pdf")),
+            effects
+        )
+        job.cancel()
+    }
+
+    @Test
+    fun `onExternalDocumentReceived places the added document at the top of TODAY among existing documents`() = runTest {
+        val existing = document("older_today.pdf", fixedNow.minusSeconds(3600))
+        val repository = FakeDocumentRepository(listOf(existing))
+        val viewModel = newViewModel(repository, displayNameFor = { "fatura.pdf" })
+
+        viewModel.onExternalDocumentReceived(Uri.parse("content://external-pdf"))
+        runCurrent()
+
+        val todaySection = viewModel.uiState.value.sections.single { it.label == SectionLabel.TODAY }
+        assertEquals(listOf("Spore_20261011_1430.pdf", "older_today.pdf"), todaySection.rows.map { it.fileName })
+    }
+
+    @Test
+    fun `onExternalDocumentReceived passes a null requested name through when no display name is resolved`() = runTest {
+        val repository = FakeDocumentRepository(emptyList())
+        val viewModel = newViewModel(repository, displayNameFor = { null })
+
+        viewModel.onExternalDocumentReceived(Uri.parse("file:///storage/emulated/0/unnamed"))
+        runCurrent()
+
+        assertEquals(1, repository.addDocumentCalls.size)
+        assertNull(repository.addDocumentCalls.single().second)
+    }
+
+    @Test
+    fun `onExternalDocumentReceived emits ShowImportError and leaves the list unchanged when addDocument fails`() = runTest {
+        val existing = document("today.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(existing)).apply {
+            addDocumentResult = Result.Failure(DocumentError.UnreadableFile(DocumentId("x")))
+        }
+        val viewModel = newViewModel(repository, displayNameFor = { "fatura.pdf" })
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onExternalDocumentReceived(Uri.parse("content://external-pdf"))
+        runCurrent()
+
+        assertEquals(listOf(DocumentsEffect.ShowImportError), effects)
+        assertEquals(listOf("today.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+        job.cancel()
+    }
+
+    @Test
+    fun `onExternalDocumentReceived emits ShowImportError and leaves the list unchanged when reading the uri throws`() = runTest {
+        val existing = document("today.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(existing))
+        val viewModel = newViewModel(
+            repository,
+            documentSourceFor = { throw java.io.IOException("resolver returned no stream") },
+            displayNameFor = { "fatura.pdf" }
+        )
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onExternalDocumentReceived(Uri.parse("content://external-pdf"))
+        runCurrent()
+
+        assertEquals(listOf(DocumentsEffect.ShowImportError), effects)
+        assertEquals(listOf("today.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+        assertTrue(repository.addDocumentCalls.isEmpty())
+        job.cancel()
+    }
+
+    @Test
+    fun `onExternalDocumentReceived emits ShowImportError and leaves the list unchanged when resolving the display name throws`() = runTest {
+        val existing = document("today.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(existing))
+        val viewModel = newViewModel(
+            repository,
+            displayNameFor = { throw java.io.IOException("resolver returned no cursor") }
+        )
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onExternalDocumentReceived(Uri.parse("content://external-pdf"))
+        runCurrent()
+
+        assertEquals(listOf(DocumentsEffect.ShowImportError), effects)
+        assertEquals(listOf("today.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+        assertTrue(repository.addDocumentCalls.isEmpty())
+        job.cancel()
+    }
+
     // --- onScreenResumed ---
 
     @Test

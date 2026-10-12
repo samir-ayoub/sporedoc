@@ -1,5 +1,6 @@
 package com.knowledge.sporedoc.ui.navigation
 
+import android.net.Uri
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -34,7 +35,9 @@ private const val SPLASH_CROSSFADE_DURATION_MILLIS = 250
 @Composable
 fun SporeDocNavHost(
     appContainer: AppContainer,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    pendingExternalUri: Uri? = null,
+    onPendingExternalUriConsumed: () -> Unit = {}
 ) {
     NavHost(
         navController = navController,
@@ -85,7 +88,9 @@ fun SporeDocNavHost(
                     val encodedId = URLEncoder.encode(id.value, ENCODING)
                     val encodedFileName = URLEncoder.encode(fileName, ENCODING)
                     navController.navigate("viewer/$encodedId/$encodedFileName")
-                }
+                },
+                pendingExternalUri = pendingExternalUri,
+                onPendingExternalUriConsumed = onPendingExternalUriConsumed
             )
         }
         composable(

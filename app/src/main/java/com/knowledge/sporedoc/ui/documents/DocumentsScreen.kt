@@ -2,6 +2,7 @@ package com.knowledge.sporedoc.ui.documents
 
 import android.app.Activity
 import android.content.Intent
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -35,7 +36,9 @@ import com.knowledge.sporedoc.domain.model.DocumentId
 @Composable
 fun DocumentsScreen(
     viewModel: DocumentsViewModel,
-    onOpenDocument: (DocumentId, String) -> Unit = { _, _ -> }
+    onOpenDocument: (DocumentId, String) -> Unit = { _, _ -> },
+    pendingExternalUri: Uri? = null,
+    onPendingExternalUriConsumed: () -> Unit = {}
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
@@ -89,6 +92,13 @@ fun DocumentsScreen(
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
+    LaunchedEffect(pendingExternalUri) {
+        if (pendingExternalUri != null) {
+            viewModel.onExternalDocumentReceived(pendingExternalUri)
+            onPendingExternalUriConsumed()
+        }
+    }
+
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
             when (effect) {
@@ -96,6 +106,7 @@ fun DocumentsScreen(
                 DocumentsEffect.ShowDeleteError -> snackbarHostState.showSnackbar(deleteErrorMessage)
                 DocumentsEffect.ShowRenameError -> snackbarHostState.showSnackbar(renameErrorMessage)
                 DocumentsEffect.ShowImportError -> snackbarHostState.showSnackbar(importErrorMessage)
+                is DocumentsEffect.OpenDocument -> onOpenDocument(effect.id, effect.fileName)
                 is DocumentsEffect.ShareDocument -> {
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "application/pdf"
