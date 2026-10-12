@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
  * Drawn above content, below grain (R7) by composition order in callers.
  */
 @Composable
-fun Vignette(modifier: Modifier = Modifier) {
+fun Vignette(modifier: Modifier = Modifier, opacity: Float = 1f) {
     Canvas(modifier = modifier.fillMaxSize()) {
         val width = size.width * 1.30f
         val height = size.height * 0.90f
@@ -27,6 +27,6 @@ fun Vignette(modifier: Modifier = Modifier) {
             center = center,
             radius = radius,
         )
-        drawRect(brush = brush)
+        drawRect(brush = brush, alpha = opacity)
     }
 }

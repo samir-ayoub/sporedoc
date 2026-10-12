@@ -95,4 +95,12 @@ object SporeDocTypography {
         letterSpacing = 4.sp,
         color = SporeDocColors.ivoryMeta,
     )
+
+    // SD-8: splash baseline line ("KNOWLEDGE APPLICATIONS").
+    val splashBaseline = TextStyle(
+        fontFamily = SporeDocFonts.mono,
+        fontSize = 8.sp,
+        letterSpacing = 3.4.sp,
+        color = SporeDocColors.ivoryMeta,
+    )
 }

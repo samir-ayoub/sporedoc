@@ -33,6 +33,10 @@ class ColorsTest {
         assertEquals(Color(0xFF1E1033), SporeDocColors.orbCore)
         assertEquals(Color(0xFF0C0716), SporeDocColors.orbMid)
         assertEquals(Color(0xFF050309), SporeDocColors.orbEdge)
+
+        // SD-8 R8: the two tokens the splash needs that did not exist before this delivery.
+        assertEquals(Color(0xFF050508), SporeDocColors.abyss)
+        assertEquals(Color(0xFFE9FFE2), SporeDocColors.laserHot)
     }
 
     @Test
