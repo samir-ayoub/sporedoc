@@ -1,6 +1,9 @@
 package com.knowledge.sporedoc.data.repository
 
+import com.knowledge.sporedoc.data.file.DuplicateFileFinder
+import com.knowledge.sporedoc.data.file.FileDigest
 import com.knowledge.sporedoc.data.file.PdfFileAccess
+import com.knowledge.sporedoc.data.file.Sha256FileDigest
 import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
@@ -26,13 +29,15 @@ class FileDocumentRepository(
     private val documentsDir: File,
     private val pdfFileAccess: PdfFileAccess,
     private val clock: Clock,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val fileDigest: FileDigest = Sha256FileDigest()
 ) : DocumentRepository {
+
+    private val duplicateFileFinder = DuplicateFileFinder(fileDigest)
 
     override suspend fun listDocuments(): Result<List<Document>, DocumentError> =
         withContext(ioDispatcher) {
-            val files = documentsDir.listFiles { file -> file.isFile && file.name.endsWith(".pdf") }
-                ?: emptyArray()
+            val files = libraryFiles()
             val documents = files.map { file -> toDocument(file) }.sortedByDescending { it.modifiedAt }
             Result.Success(documents)
         }
@@ -64,25 +69,38 @@ class FileDocumentRepository(
         requestedName: String?
     ): Result<Document, DocumentError> = withContext(ioDispatcher) {
         val now = clock()
+        val stagingFile = File(documentsDir, ".staging-${System.nanoTime()}")
+
+        source.openInputStream().use { input ->
+            stagingFile.outputStream().use { output -> input.copyTo(output) }
+        }
+
+        val existingFiles = libraryFiles()
+        val matchedFile = duplicateFileFinder.find(stagingFile, existingFiles)
+        if (matchedFile != null) {
+            stagingFile.delete()
+            return@withContext Result.Success(toDocument(matchedFile))
+        }
+
         val desiredName = requestedName ?: generateName(now)
         val finalName = resolveAvailableName(desiredName)
         val targetFile = File(documentsDir, finalName)
 
-        source.openInputStream().use { input ->
-            targetFile.outputStream().use { output -> input.copyTo(output) }
-        }
-
-        when (pdfFileAccess.pageCount(targetFile)) {
+        when (pdfFileAccess.pageCount(stagingFile)) {
             is Result.Success -> {
+                stagingFile.renameTo(targetFile)
                 targetFile.setLastModified(now.toEpochMilli())
                 Result.Success(toDocument(targetFile))
             }
             is Result.Failure -> {
-                targetFile.delete()
+                stagingFile.delete()
                 Result.Failure(DocumentError.UnreadableFile(DocumentId(finalName)))
             }
         }
     }
+
+    private fun libraryFiles(): List<File> =
+        documentsDir.listFiles { file -> file.isFile && file.name.endsWith(".pdf") }?.toList() ?: emptyList()
 
     override suspend fun renameDocument(id: DocumentId, newName: String): Result<Document, DocumentError> =
         withContext(ioDispatcher) {
