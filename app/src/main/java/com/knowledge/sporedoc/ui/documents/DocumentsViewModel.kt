@@ -93,6 +93,28 @@ class DocumentsViewModel(
         }
     }
 
+    /** A PDF arrived from a system Intent (ACTION_VIEW/ACTION_SEND): add it keeping its original display name. */
+    fun onExternalDocumentReceived(uri: Uri) {
+        viewModelScope.launch {
+            val added = try {
+                val source = documentSourceFor(uri)
+                val requestedName = displayNameFor(uri)
+                when (val result = documentRepository.addDocument(source, requestedName = requestedName)) {
+                    is Result.Success -> result.value
+                    is Result.Failure -> null
+                }
+            } catch (_: Exception) {
+                null
+            }
+            if (added != null) {
+                refresh()
+                _effects.send(DocumentsEffect.OpenDocument(added.id, added.fileName))
+            } else {
+                _effects.send(DocumentsEffect.ShowImportError)
+            }
+        }
+    }
+
     /** ML Kit failed to produce a result (not a user cancel). */
     fun onScanFailed() {
         viewModelScope.launch {

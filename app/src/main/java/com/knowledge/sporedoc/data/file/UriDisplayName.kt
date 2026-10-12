@@ -10,6 +10,9 @@ import android.provider.OpenableColumns
  * the name cannot be resolved (missing cursor, empty column, etc.).
  */
 fun displayNameFor(contentResolver: ContentResolver, uri: Uri): String? {
+    if (uri.scheme == "file") {
+        return uri.lastPathSegment
+    }
     val cursor = contentResolver.query(uri, null, null, null, null) ?: return null
     return cursor.use {
         if (!it.moveToFirst()) return null

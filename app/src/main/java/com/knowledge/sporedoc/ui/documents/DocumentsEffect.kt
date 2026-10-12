@@ -1,6 +1,7 @@
 package com.knowledge.sporedoc.ui.documents
 
 import android.net.Uri
+import com.knowledge.sporedoc.domain.model.DocumentId
 
 /** One-time effects the DocumentsScreen observes from [DocumentsViewModel]. */
 sealed interface DocumentsEffect {
@@ -18,4 +19,7 @@ sealed interface DocumentsEffect {
 
     /** The picked PDF could not be imported (unreadable file, read failure, etc.). */
     data object ShowImportError : DocumentsEffect
+
+    /** A document was added from an external source (system Intent); open it in the viewer. */
+    data class OpenDocument(val id: DocumentId, val fileName: String) : DocumentsEffect
 }
