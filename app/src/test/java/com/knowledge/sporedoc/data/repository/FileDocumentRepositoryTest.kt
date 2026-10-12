@@ -198,7 +198,7 @@ class FileDocumentRepositoryTest {
         val repository = newRepository()
         repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = null).asSuccess()
 
-        val second = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = null).asSuccess()
+        val second = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = null).asSuccess()
 
         assertEquals("Spore_20261011_1430_2.pdf", second.fileName)
     }
@@ -207,9 +207,9 @@ class FileDocumentRepositoryTest {
     fun `addDocument without requested name appends _3 when _2 also collides`() = runTest {
         val repository = newRepository()
         repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = null).asSuccess()
-        repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = null).asSuccess()
+        repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = null).asSuccess()
 
-        val third = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = null).asSuccess()
+        val third = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = null).asSuccess()
 
         assertEquals("Spore_20261011_1430_3.pdf", third.fileName)
     }
@@ -228,7 +228,7 @@ class FileDocumentRepositoryTest {
         val repository = newRepository()
         repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "contrato.pdf").asSuccess()
 
-        val second = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "contrato.pdf").asSuccess()
+        val second = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "contrato.pdf").asSuccess()
 
         assertEquals("contrato_2.pdf", second.fileName)
         assertEquals(validPdfContent(1), File(tempFolder.root, "contrato.pdf").readText())
@@ -272,6 +272,74 @@ class FileDocumentRepositoryTest {
         val document = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "contrato.pdf").asSuccess()
 
         assertEquals(fixedNow.epochSecond, document.modifiedAt.epochSecond)
+    }
+
+    // --- addDocument duplicate recognition (SD-13) ---
+
+    @Test
+    fun `addDocument recognizes identical content arriving under the same name and does not duplicate the file`() = runTest {
+        val repository = newRepository()
+        val original = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "fatura.pdf").asSuccess()
+
+        val reopened = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "fatura.pdf").asSuccess()
+
+        assertEquals(original.id, reopened.id)
+        assertEquals("fatura.pdf", reopened.fileName)
+        assertEquals(listOf("fatura.pdf"), tempFolder.root.listFiles()!!.map { it.name })
+    }
+
+    @Test
+    fun `addDocument recognizes identical content arriving under a different name and opens the existing document instead`() = runTest {
+        val repository = newRepository()
+        val original = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "fatura.pdf").asSuccess()
+
+        val reopened = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "copia.pdf").asSuccess()
+
+        assertEquals(original.id, reopened.id)
+        assertEquals("fatura.pdf", reopened.fileName)
+        assertEquals(listOf("fatura.pdf"), tempFolder.root.listFiles()!!.map { it.name })
+    }
+
+    @Test
+    fun `addDocument keeps the recognized document's original modifiedAt instead of the time of the later request`() = runTest {
+        val firstClock = { ZonedDateTime.of(2026, 10, 11, 14, 30, 0, 0, ZoneId.systemDefault()).toInstant() }
+        val secondClock = { ZonedDateTime.of(2026, 10, 12, 9, 0, 0, 0, ZoneId.systemDefault()).toInstant() }
+        val firstRepository = newRepository(clock = firstClock)
+        val original = firstRepository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "fatura.pdf").asSuccess()
+
+        val secondRepository = newRepository(clock = secondClock)
+        val reopened = secondRepository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "fatura.pdf").asSuccess()
+
+        assertEquals(original.modifiedAt, reopened.modifiedAt)
+        assertEquals(firstClock().epochSecond, reopened.modifiedAt.epochSecond)
+    }
+
+    @Test
+    fun `addDocument with the same requested name but different content creates a suffixed copy and opens it`() = runTest {
+        val repository = newRepository()
+        repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "fatura.pdf").asSuccess()
+
+        val second = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = "fatura.pdf").asSuccess()
+
+        assertEquals("fatura_2.pdf", second.fileName)
+        assertEquals(
+            setOf("fatura.pdf", "fatura_2.pdf"),
+            tempFolder.root.listFiles()!!.map { it.name }.toSet()
+        )
+    }
+
+    @Test
+    fun `addDocument with different content under a different name is added as a second document and opens it`() = runTest {
+        val repository = newRepository()
+        repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "fatura.pdf").asSuccess()
+
+        val second = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = "recibo.pdf").asSuccess()
+
+        assertEquals("recibo.pdf", second.fileName)
+        assertEquals(
+            setOf("fatura.pdf", "recibo.pdf"),
+            tempFolder.root.listFiles()!!.map { it.name }.toSet()
+        )
     }
 
     // --- renameDocument ---
@@ -324,7 +392,7 @@ class FileDocumentRepositoryTest {
     fun `renameDocument rejects a name colliding with another document without touching either file`() = runTest {
         val repository = newRepository()
         val docA = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "a.pdf").asSuccess()
-        repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "b.pdf").asSuccess()
+        repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "b.pdf").asSuccess()
 
         val error = repository.renameDocument(docA.id, "b").asFailure()
 

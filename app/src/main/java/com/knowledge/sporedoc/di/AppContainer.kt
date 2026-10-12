@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
 import com.knowledge.sporedoc.data.file.AndroidPdfFileAccess
+import com.knowledge.sporedoc.data.file.Sha256FileDigest
 import com.knowledge.sporedoc.data.file.UriDocumentSource
 import com.knowledge.sporedoc.data.file.displayNameFor
 import com.knowledge.sporedoc.data.repository.CachingDocumentRepository
@@ -32,7 +33,8 @@ class AppContainer(context: Context) {
         FileDocumentRepository(
             documentsDir = documentsDir,
             pdfFileAccess = AndroidPdfFileAccess(),
-            clock = clock
+            clock = clock,
+            fileDigest = Sha256FileDigest()
         )
     )
 
