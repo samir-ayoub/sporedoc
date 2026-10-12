@@ -1,30 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SporeDoc mark: gold pyramid + laser beam. Grid 108 (adaptive-icon canvas). Pyramid sits inside the 66dp safe zone. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- left face -->
+    <path android:pathData="M54,33 L31,62 L54,75 Z">
+      <aapt:attr name="android:fillColor">
+        <gradient android:type="linear" android:startX="38" android:startY="40" android:endX="54" android:endY="75">
+          <item android:offset="0" android:color="#E6C574"/>
+          <item android:offset="0.45" android:color="#CFA53A"/>
+          <item android:offset="1" android:color="#94702A"/>
+        </gradient>
+      </aapt:attr>
     </path>
-    <path
-        android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+    <!-- right face -->
+    <path android:pathData="M54,33 L77,62 L54,75 Z">
+      <aapt:attr name="android:fillColor">
+        <gradient android:type="linear" android:startX="70" android:startY="40" android:endX="54" android:endY="75">
+          <item android:offset="0" android:color="#D9B65A"/>
+          <item android:offset="0.5" android:color="#B38B33"/>
+          <item android:offset="1" android:color="#76571C"/>
+        </gradient>
+      </aapt:attr>
+    </path>
+    <!-- brushed-brass streaks, clipped to the pyramid -->
+    <group>
+      <clip-path android:pathData="M54,33 L31,62 L54,75 L77,62 Z"/>
+      <path android:pathData="M0.7999999999999972,30 L68.8,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M68.8,30 L0.7999999999999972,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M4.0,30 L72.0,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M72.0,30 L4.0,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M7.199999999999999,30 L75.2,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M75.2,30 L7.199999999999999,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M10.399999999999999,30 L78.4,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M78.4,30 L10.399999999999999,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M13.6,30 L81.6,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M81.6,30 L13.6,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M16.8,30 L84.8,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M84.8,30 L16.8,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M20.0,30 L88.0,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M88.0,30 L20.0,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M23.2,30 L91.2,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M91.2,30 L23.2,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M26.4,30 L94.4,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M94.4,30 L26.4,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M29.6,30 L97.6,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M97.6,30 L29.6,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M32.8,30 L100.8,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M100.8,30 L32.8,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M36.0,30 L104.0,84" android:strokeColor="#12FFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M104.0,30 L36.0,84" android:strokeColor="#0D3A2A08" android:strokeWidth="0.35"/>
+      <path android:pathData="M39.2,30 L107.2,84" android:strokeColor="#0AFFF4D6" android:strokeWidth="0.35"/>
+      <path android:pathData="M107.2,30 L39.2,84" android:strokeColor="#083A2A08" android:strokeWidth="0.35"/>
+    </group>
+    <!-- sharp metallic edges -->
+    <path android:pathData="M31,62 L54,33 L77,62" android:strokeColor="#8CFFF0C4" android:strokeWidth="0.28" android:strokeLineJoin="miter"/>
+    <path android:pathData="M31,62 L54,75 L77,62" android:strokeColor="#995E4416" android:strokeWidth="0.28" android:strokeLineJoin="miter"/>
+    <!-- laser glow -->
+    <path android:pathData="M51,0 L57,0 L57,108 L51,108 Z">
+      <aapt:attr name="android:fillColor">
+        <gradient android:type="linear" android:startX="51" android:startY="0" android:endX="57" android:endY="0">
+          <item android:offset="0" android:color="#0039FF14"/>
+          <item android:offset="0.5" android:color="#4239FF14"/>
+          <item android:offset="1" android:color="#0039FF14"/>
+        </gradient>
+      </aapt:attr>
+    </path>
+    <!-- laser core + hot centre -->
+    <path android:pathData="M53.6,0 L54.4,0 L54.4,108 L53.6,108 Z" android:fillColor="#39FF14"/>
+    <path android:pathData="M53.85,0 L54.15,0 L54.15,108 L53.85,108 Z" android:fillColor="#D9E9FFE2"/>
+    <!-- apex halo -->
+    <path android:pathData="M47,33 A7,7 0 1,0 61,33 A7,7 0 1,0 47,33 Z">
+      <aapt:attr name="android:fillColor">
+        <gradient android:type="radial" android:centerX="54" android:centerY="33" android:gradientRadius="7">
+          <item android:offset="0" android:color="#BFC8FFB8"/>
+          <item android:offset="0.3" android:color="#5239FF14"/>
+          <item android:offset="1" android:color="#0039FF14"/>
+        </gradient>
+      </aapt:attr>
+    </path>
+    <path android:pathData="M50.6,33 A3.4,3.4 0 1,0 57.4,33 A3.4,3.4 0 1,0 50.6,33 Z" android:strokeColor="#7339FF14" android:strokeWidth="0.22"/>
 </vector>
