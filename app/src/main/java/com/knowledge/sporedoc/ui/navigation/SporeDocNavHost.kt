@@ -17,17 +17,20 @@ import com.knowledge.sporedoc.di.AppContainer
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.ui.documents.DocumentsScreen
 import com.knowledge.sporedoc.ui.documents.DocumentsViewModel
+import com.knowledge.sporedoc.ui.splash.SplashScreen
 import com.knowledge.sporedoc.ui.viewer.ViewerScreen
 import com.knowledge.sporedoc.ui.viewer.ViewerViewModel
 import java.net.URLDecoder
 import java.net.URLEncoder
 
+private const val SPLASH_ROUTE = "splash"
 private const val DOCUMENTS_ROUTE = "documents"
 private const val VIEWER_ROUTE = "viewer/{documentId}/{fileName}"
 private const val ENCODING = "UTF-8"
 private const val TRANSITION_DURATION_MILLIS = 150
+private const val SPLASH_CROSSFADE_DURATION_MILLIS = 250
 
-/** Declares the nav graph and starts it at the documents screen. */
+/** Declares the nav graph and starts it at the splash screen. */
 @Composable
 fun SporeDocNavHost(
     appContainer: AppContainer,
@@ -35,12 +38,33 @@ fun SporeDocNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = DOCUMENTS_ROUTE,
-        enterTransition = { fadeIn(animationSpec = tween(TRANSITION_DURATION_MILLIS)) },
-        exitTransition = { fadeOut(animationSpec = tween(TRANSITION_DURATION_MILLIS)) },
+        startDestination = SPLASH_ROUTE,
+        enterTransition = {
+            if (initialState.destination.route == SPLASH_ROUTE) {
+                fadeIn(animationSpec = tween(SPLASH_CROSSFADE_DURATION_MILLIS))
+            } else {
+                fadeIn(animationSpec = tween(TRANSITION_DURATION_MILLIS))
+            }
+        },
+        exitTransition = {
+            if (targetState.destination.route == DOCUMENTS_ROUTE && initialState.destination.route == SPLASH_ROUTE) {
+                fadeOut(animationSpec = tween(SPLASH_CROSSFADE_DURATION_MILLIS))
+            } else {
+                fadeOut(animationSpec = tween(TRANSITION_DURATION_MILLIS))
+            }
+        },
         popEnterTransition = { fadeIn(animationSpec = tween(TRANSITION_DURATION_MILLIS)) },
         popExitTransition = { fadeOut(animationSpec = tween(TRANSITION_DURATION_MILLIS)) }
     ) {
+        composable(SPLASH_ROUTE) {
+            SplashScreen(
+                onFinished = {
+                    navController.navigate(DOCUMENTS_ROUTE) {
+                        popUpTo(SPLASH_ROUTE) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(DOCUMENTS_ROUTE) {
             val factory = viewModelFactory {
                 initializer {

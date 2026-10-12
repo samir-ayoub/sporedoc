@@ -4,6 +4,9 @@
     <!-- DocumentsScreen -->
     <string name="documents_wordmark">SPOREDOC</string>
     <string name="documents_subtitle">DOCUMENT SCANNER</string>
+
+    <!-- SplashScreen -->
+    <string name="splash_baseline">KNOWLEDGE APPLICATIONS</string>
     <string name="documents_empty_state">NO DOCUMENTS YET</string>
     <string name="section_today">TODAY</string>
     <string name="section_recent_documents">RECENT DOCUMENTS</string>

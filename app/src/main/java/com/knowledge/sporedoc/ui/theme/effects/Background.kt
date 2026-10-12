@@ -10,8 +10,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import com.knowledge.sporedoc.ui.theme.SporeDocColors
 
-/** Which of the two screens is asking for its background stack. */
-enum class BackgroundScreen { Documents, Viewer }
+/** Which screen is asking for its background stack. */
+enum class BackgroundScreen { Documents, Viewer, Splash }
 
 data class GradientStop(val color: Color, val offset: Float)
 
@@ -72,24 +72,37 @@ private val magmaLayer = GradientLayer(
     ),
 )
 
+// SD-8 R9: Splash only. Centered nebula haze, radius ~75% of width, ~30% alpha.
+private val splashHazeLayer = GradientLayer(
+    widthFraction = 1.50f,
+    heightFraction = 1.50f,
+    centerXFraction = 0.50f,
+    centerYFraction = 0.50f,
+    stops = listOf(
+        GradientStop(SporeDocColors.nebulaHaze.copy(alpha = 0.30f), 0f),
+        GradientStop(Color.Transparent, 0.70f),
+    ),
+)
+
 /**
  * Pure seam (R6): which gradient layers belong to which screen.
- * Documents = [base, nebulaHaze]. Viewer = [base, halo, magma].
+ * Documents = [base, nebulaHaze]. Viewer = [base, halo, magma]. Splash = [base, haze].
  */
 fun backgroundLayers(screen: BackgroundScreen): List<GradientLayer> = when (screen) {
     BackgroundScreen.Documents -> listOf(baseLayer, nebulaHazeLayer)
     BackgroundScreen.Viewer -> listOf(baseLayer, haloLayer, magmaLayer)
+    BackgroundScreen.Splash -> listOf(baseLayer, splashHazeLayer)
 }
 
 @Composable
-fun ScreenBackground(screen: BackgroundScreen, modifier: Modifier = Modifier) {
+fun ScreenBackground(screen: BackgroundScreen, modifier: Modifier = Modifier, opacity: Float = 1f) {
     val layers = backgroundLayers(screen)
     Canvas(modifier = modifier.fillMaxSize()) {
-        layers.forEach { layer -> drawGradientLayer(layer) }
+        layers.forEach { layer -> drawGradientLayer(layer, opacity) }
     }
 }
 
-private fun DrawScope.drawGradientLayer(layer: GradientLayer) {
+private fun DrawScope.drawGradientLayer(layer: GradientLayer, opacity: Float = 1f) {
     val width = size.width * layer.widthFraction
     val height = size.height * layer.heightFraction
     val center = Offset(size.width * layer.centerXFraction, size.height * layer.centerYFraction)
@@ -99,5 +112,5 @@ private fun DrawScope.drawGradientLayer(layer: GradientLayer) {
         center = center,
         radius = radius,
     )
-    drawRect(brush = brush)
+    drawRect(brush = brush, alpha = opacity)
 }

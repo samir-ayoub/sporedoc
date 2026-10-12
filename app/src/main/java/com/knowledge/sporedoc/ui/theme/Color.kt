@@ -37,4 +37,8 @@ object SporeDocColors {
     val orbCore = Color(0xFF1E1033)
     val orbMid = Color(0xFF0C0716)
     val orbEdge = Color(0xFF050309)
+
+    // SD-8: splash-only tokens from the brand kit.
+    val abyss = Color(0xFF050508)
+    val laserHot = Color(0xFFE9FFE2)
 }

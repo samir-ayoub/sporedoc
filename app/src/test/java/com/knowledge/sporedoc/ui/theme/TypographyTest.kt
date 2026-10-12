@@ -115,4 +115,18 @@ class TypographyTest {
         assertEquals(4.sp, style.letterSpacing)
         assertEquals(SporeDocColors.ivoryMeta, style.color)
     }
+
+    /**
+     * SD-8, Architect's public contract for `ui/theme/Typography.kt`:
+     * "splashBaseline: fontFamily = SporeDocFonts.mono, fontSize = 8.sp, letterSpacing = 3.4.sp,
+     * color = SporeDocColors.ivoryMeta".
+     */
+    @Test
+    fun `splashBaseline uses mono at 8sp with 3_4sp letter spacing in ivoryMeta`() {
+        val style = SporeDocTypography.splashBaseline
+        assertEquals(SporeDocFonts.mono, style.fontFamily)
+        assertEquals(8.sp, style.fontSize)
+        assertEquals(3.4.sp, style.letterSpacing)
+        assertEquals(SporeDocColors.ivoryMeta, style.color)
+    }
 }
