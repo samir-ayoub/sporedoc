@@ -41,4 +41,12 @@ object SporeDocColors {
     // SD-8: splash-only tokens from the brand kit.
     val abyss = Color(0xFF050508)
     val laserHot = Color(0xFFE9FFE2)
+
+    // SD-15: footer tripartite dock, QR CODE disabled-box tokens (no handover-JSON entry).
+    val qrCodeMuted = Color(0x40FDFBF7)
+    val qrCodeMutedStroke = Color(0x2EB89047)
+
+    // SD-15: footer box backgrounds, pre-composed with their alpha (bgEdge at 55%/30%).
+    val footerBoxBackground = Color(0x8C030305)
+    val footerBoxBackgroundDisabled = Color(0x4D030305)
 }

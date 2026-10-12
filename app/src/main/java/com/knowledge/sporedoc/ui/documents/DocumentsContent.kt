@@ -1,8 +1,6 @@
 package com.knowledge.sporedoc.ui.documents
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,21 +8,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
 import com.knowledge.sporedoc.R
 import com.knowledge.sporedoc.domain.model.DocumentId
@@ -33,7 +24,6 @@ import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.ui.components.DeleteConfirmationDialog
 import com.knowledge.sporedoc.ui.theme.SporeDocColors
 import com.knowledge.sporedoc.ui.theme.SporeDocSpacing
-import com.knowledge.sporedoc.ui.theme.SporeDocStroke
 import com.knowledge.sporedoc.ui.theme.SporeDocTheme
 import com.knowledge.sporedoc.ui.theme.SporeDocTypography
 import com.knowledge.sporedoc.ui.theme.effects.BackgroundScreen
@@ -66,7 +56,7 @@ fun DocumentsContent(
         ScreenBackground(screen = BackgroundScreen.Documents)
         EclipseOrb()
         Column(modifier = Modifier.fillMaxSize()) {
-            DocumentsHeader(onImportRequested = onImportRequested)
+            DocumentsHeader()
             DocumentsBody(
                 state = state,
                 loadThumbnail = loadThumbnail,
@@ -77,7 +67,11 @@ fun DocumentsContent(
                 modifier = Modifier.weight(1f)
             )
         }
-        BottomDock(onCapture = onCapture, modifier = Modifier.align(Alignment.BottomCenter))
+        BottomDock(
+            onImportRequested = onImportRequested,
+            onCapture = onCapture,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
         Vignette()
         Grain()
     }
@@ -98,73 +92,26 @@ fun DocumentsContent(
 }
 
 @Composable
-private fun DocumentsHeader(onImportRequested: () -> Unit, modifier: Modifier = Modifier) {
+private fun DocumentsHeader(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(SporeDocSpacing.headerHeightDp)
+            .padding(
+                start = SporeDocSpacing.screenGutterDp,
+                end = SporeDocSpacing.screenGutterDp,
+                bottom = SporeDocSpacing.headerPaddingBottomDp
+            ),
+        contentAlignment = Alignment.BottomStart
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .fillMaxSize()
-                .padding(
-                    start = SporeDocSpacing.screenGutterDp,
-                    end = SporeDocSpacing.screenGutterDp,
-                    bottom = SporeDocSpacing.headerPaddingBottomDp
-                ),
-            contentAlignment = Alignment.BottomStart
-        ) {
-            Column {
-                Text(text = stringResource(R.string.documents_wordmark), style = SporeDocTypography.wordmark)
-                Text(
-                    text = stringResource(R.string.documents_subtitle),
-                    style = SporeDocTypography.subtitle,
-                    modifier = Modifier.padding(top = SporeDocSpacing.subtitleMarginTopDp)
-                )
-            }
-        }
-        ImportButton(
-            onClick = onImportRequested,
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(
-                    top = SporeDocSpacing.importButtonPaddingTopDp,
-                    end = SporeDocSpacing.importButtonPaddingEndDp
-                )
-        )
-    }
-}
-
-@Composable
-private fun ImportButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val description = stringResource(R.string.import_content_description)
-    Box(
-        modifier = modifier
-            .size(
-                width = maxOf(SporeDocSpacing.importButtonSizeDp, SporeDocSpacing.minTouchTargetDp),
-                height = maxOf(SporeDocSpacing.importButtonSizeDp, SporeDocSpacing.minTouchTargetDp)
+        Column {
+            Text(text = stringResource(R.string.documents_wordmark), style = SporeDocTypography.wordmark)
+            Text(
+                text = stringResource(R.string.documents_subtitle),
+                style = SporeDocTypography.subtitle,
+                modifier = Modifier.padding(top = SporeDocSpacing.subtitleMarginTopDp)
             )
-            .clickable(onClick = onClick)
-            .semantics {
-                contentDescription = description
-                role = Role.Button
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        ImportGlyph()
-    }
-}
-
-@Composable
-private fun ImportGlyph(modifier: Modifier = Modifier) {
-    Canvas(modifier = modifier.size(SporeDocSpacing.importGlyphSizeDp)) {
-        val strokeWidthPx = SporeDocStroke.iconStrokeDp.toPx()
-        val color = SporeDocColors.goldMatte
-        val midX = size.width / 2f
-        drawLine(color, Offset(midX, size.height), Offset(midX, 0f), strokeWidthPx, StrokeCap.Square)
-        drawLine(color, Offset(midX, 0f), Offset(0f, size.height * 0.4f), strokeWidthPx, StrokeCap.Square)
-        drawLine(color, Offset(midX, 0f), Offset(size.width, size.height * 0.4f), strokeWidthPx, StrokeCap.Square)
+        }
     }
 }
 
@@ -208,7 +155,11 @@ private fun DocumentsBody(
 }
 
 @Composable
-private fun BottomDock(onCapture: () -> Unit, modifier: Modifier = Modifier) {
+private fun BottomDock(
+    onImportRequested: () -> Unit,
+    onCapture: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -225,7 +176,7 @@ private fun BottomDock(onCapture: () -> Unit, modifier: Modifier = Modifier) {
                 bottom = SporeDocSpacing.dockPaddingBottomDp
             )
     ) {
-        OutlinedPrimaryButton(onClick = onCapture)
+        DocumentsFooter(onImportRequested = onImportRequested, onCapture = onCapture)
     }
 }
 

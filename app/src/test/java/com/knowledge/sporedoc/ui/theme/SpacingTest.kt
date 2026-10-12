@@ -24,16 +24,10 @@ class SpacingTest {
         assertEquals(44.dp, SporeDocSpacing.minTouchTargetDp)
     }
 
-    /**
-     * SD-6 RF1 / RF9: the import IconButton in `screens.DocumentsScreen.header.children`
-     * is `sizeDp: 48`, positioned "top-end, 14dp end, 18dp top"; its glyph (`icons.import`)
-     * is `sizeDp: 22`.
-     */
-    @Test
-    fun `import button tokens match the handover values`() {
-        assertEquals(48.dp, SporeDocSpacing.importButtonSizeDp)
-        assertEquals(14.dp, SporeDocSpacing.importButtonPaddingEndDp)
-        assertEquals(18.dp, SporeDocSpacing.importButtonPaddingTopDp)
-        assertEquals(22.dp, SporeDocSpacing.importGlyphSizeDp)
-    }
+    // SD-15 R1/R2: the header no longer has an import icon (it moves into the tripartite
+    // footer), so the former `importButtonSizeDp` / `importButtonPaddingEndDp` /
+    // `importButtonPaddingTopDp` / `importGlyphSizeDp` tokens this test used to assert on are
+    // retired by this ticket's structural plan. The new footer-box tokens it introduces have no
+    // fixed names in the spec/design handover, so they are not asserted here (see tester's
+    // reported test gaps).
 }

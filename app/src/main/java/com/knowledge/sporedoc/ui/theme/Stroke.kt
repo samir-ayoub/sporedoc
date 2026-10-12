@@ -10,6 +10,9 @@ object SporeDocStroke {
     val hairlineDp: Dp = 0.5.dp
     val frameDp: Dp = 1.dp
     val iconStrokeDp: Dp = 1.dp
+
+    // SD-15: footer tripartite dock box borders.
+    val footerBoxBorderDp: Dp = 0.5.dp
     val iconJoin: StrokeJoin = StrokeJoin.Miter
     val iconCap: StrokeCap = StrokeCap.Square
 }
