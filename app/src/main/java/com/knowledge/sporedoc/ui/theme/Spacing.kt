@@ -17,10 +17,6 @@ object SporeDocSpacing {
     val headerHeightDp: Dp = 196.dp
     val headerPaddingBottomDp: Dp = 28.dp
     val subtitleMarginTopDp: Dp = 16.dp
-    val importButtonSizeDp: Dp = 48.dp
-    val importButtonPaddingEndDp: Dp = 14.dp
-    val importButtonPaddingTopDp: Dp = 18.dp
-    val importGlyphSizeDp: Dp = 22.dp
 
     // components.DocumentRow
     val rowPaddingStartDp: Dp = 24.dp
@@ -38,9 +34,12 @@ object SporeDocSpacing {
     val dockPaddingTopDp: Dp = 56.dp
     val dockPaddingBottomDp: Dp = 30.dp
 
-    // components.OutlinedPrimaryButton
-    val buttonHeightDp: Dp = 58.dp
-    val buttonIconGapDp: Dp = 14.dp
+    // ui/documents/DocumentsFooter
+    val footerBoxHeightDp: Dp = 72.dp
+    val footerBoxGapDp: Dp = 10.dp
+    val footerIconSizeDp: Dp = 20.dp
+    val footerIconLabelGapDp: Dp = 10.dp
+    val footerBoxBorderInsetDp: Dp = 0.dp
 
     // screens.ViewerScreen.appBar
     val viewerAppBarHeightDp: Dp = 68.dp
