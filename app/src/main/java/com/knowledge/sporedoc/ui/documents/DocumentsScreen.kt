@@ -14,7 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -47,6 +50,21 @@ fun DocumentsScreen(
     val deleteErrorMessage = stringResource(R.string.delete_error_message)
     val renameErrorMessage = stringResource(R.string.rename_error_message)
     val importErrorMessage = stringResource(R.string.import_error_message)
+
+    // Guards against opening the viewer more than once for this screen instance (e.g. two
+    // rapid taps on the same row during the enter transition, SD-14): the first call wins,
+    // every later one — another row tap or the external-document effect — is a no-op. The
+    // guard resets naturally when the list recomposes fresh after returning from the viewer.
+    val latestOnOpenDocument = rememberUpdatedState(onOpenDocument)
+    var hasOpenedDocument by remember { mutableStateOf(false) }
+    val guardedOnOpenDocument: (DocumentId, String) -> Unit = remember {
+        { id, fileName ->
+            if (!hasOpenedDocument) {
+                hasOpenedDocument = true
+                latestOnOpenDocument.value(id, fileName)
+            }
+        }
+    }
 
     val importLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -106,7 +124,7 @@ fun DocumentsScreen(
                 DocumentsEffect.ShowDeleteError -> snackbarHostState.showSnackbar(deleteErrorMessage)
                 DocumentsEffect.ShowRenameError -> snackbarHostState.showSnackbar(renameErrorMessage)
                 DocumentsEffect.ShowImportError -> snackbarHostState.showSnackbar(importErrorMessage)
-                is DocumentsEffect.OpenDocument -> onOpenDocument(effect.id, effect.fileName)
+                is DocumentsEffect.OpenDocument -> guardedOnOpenDocument(effect.id, effect.fileName)
                 is DocumentsEffect.ShareDocument -> {
                     val intent = Intent(Intent.ACTION_SEND).apply {
                         type = "application/pdf"
@@ -133,7 +151,7 @@ fun DocumentsScreen(
             },
             loadThumbnail = viewModel::loadThumbnail,
             onImportRequested = { importLauncher.launch(arrayOf("application/pdf")) },
-            onOpenDocument = onOpenDocument,
+            onOpenDocument = guardedOnOpenDocument,
             onShareRequested = viewModel::onShareRequested,
             onRenameRequested = viewModel::onRenameRequested,
             onRenameConfirmed = viewModel::onRenameConfirmed,

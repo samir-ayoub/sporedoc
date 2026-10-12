@@ -6,6 +6,10 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -21,7 +25,21 @@ fun ViewerScreen(viewModel: ViewerViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
     val loadErrorMessage = stringResource(R.string.viewer_load_error_message)
 
-    BackHandler(onBack = onBack)
+    // Guards against a navigation action firing more than once for this screen instance
+    // (e.g. two rapid taps on the back icon during the exit transition, SD-14): the first
+    // call wins, every later one — tap, system back, or a view-model effect — is a no-op.
+    val latestOnBack = rememberUpdatedState(onBack)
+    var hasNavigatedBack by remember { mutableStateOf(false) }
+    val guardedOnBack = remember {
+        {
+            if (!hasNavigatedBack) {
+                hasNavigatedBack = true
+                latestOnBack.value()
+            }
+        }
+    }
+
+    BackHandler(onBack = guardedOnBack)
 
     LaunchedEffect(viewModel) {
         viewModel.effects.collect { effect ->
@@ -34,10 +52,10 @@ fun ViewerScreen(viewModel: ViewerViewModel, onBack: () -> Unit) {
                     }
                     context.startActivity(Intent.createChooser(intent, null))
                 }
-                ViewerEffect.DocumentDeleted -> onBack()
+                ViewerEffect.DocumentDeleted -> guardedOnBack()
                 ViewerEffect.LoadFailed -> {
                     Toast.makeText(context, loadErrorMessage, Toast.LENGTH_LONG).show()
-                    onBack()
+                    guardedOnBack()
                 }
             }
         }
@@ -46,7 +64,7 @@ fun ViewerScreen(viewModel: ViewerViewModel, onBack: () -> Unit) {
     ViewerContent(
         state = state,
         loadPage = viewModel::loadPage,
-        onBack = onBack,
+        onBack = guardedOnBack,
         onDeleteRequested = viewModel::onDeleteRequested,
         onDeleteConfirmed = viewModel::onDeleteConfirmed,
         onDeleteCancelled = viewModel::onDeleteCancelled,
