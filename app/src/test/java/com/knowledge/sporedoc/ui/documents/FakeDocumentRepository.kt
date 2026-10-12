@@ -4,6 +4,7 @@ import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentError
 import com.knowledge.sporedoc.domain.repository.DocumentRepository
 import com.knowledge.sporedoc.domain.util.Result
@@ -48,17 +49,27 @@ class FakeDocumentRepository(
     /** Record of every (id, newName) pair passed to [renameDocument]. */
     val renameDocumentCalls = mutableListOf<Pair<DocumentId, String>>()
 
+    /** Record of every (id, targetSize) pair passed to [getThumbnail]. */
+    val getThumbnailCalls = mutableListOf<Pair<DocumentId, PixelSize>>()
+
+    /** Record of every (id, pageIndex, targetSize) triple passed to [getPageImage]. */
+    val getPageImageCalls = mutableListOf<Triple<DocumentId, Int, PixelSize>>()
+
     override suspend fun listDocuments(): Result<List<Document>, DocumentError> =
         listDocumentsResult ?: Result.Success(documents.toList())
 
     override suspend fun getPageCount(id: DocumentId): Result<Int, DocumentError> =
         pageCountResults[id] ?: Result.Failure(DocumentError.FileMissing(id))
 
-    override suspend fun getPageImage(id: DocumentId, pageIndex: Int): Result<PageImage, DocumentError> =
-        pageImages[id to pageIndex] ?: thumbnails[id] ?: Result.Failure(DocumentError.FileMissing(id))
+    override suspend fun getPageImage(id: DocumentId, pageIndex: Int, targetSize: PixelSize): Result<PageImage, DocumentError> {
+        getPageImageCalls.add(Triple(id, pageIndex, targetSize))
+        return pageImages[id to pageIndex] ?: thumbnails[id] ?: Result.Failure(DocumentError.FileMissing(id))
+    }
 
-    override suspend fun getThumbnail(id: DocumentId): Result<PageImage, DocumentError> =
-        thumbnails[id] ?: Result.Failure(DocumentError.FileMissing(id))
+    override suspend fun getThumbnail(id: DocumentId, targetSize: PixelSize): Result<PageImage, DocumentError> {
+        getThumbnailCalls.add(id to targetSize)
+        return thumbnails[id] ?: Result.Failure(DocumentError.FileMissing(id))
+    }
 
     override suspend fun addDocument(
         source: DocumentSource,

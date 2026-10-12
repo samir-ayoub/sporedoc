@@ -3,6 +3,7 @@ package com.knowledge.sporedoc.ui.viewer
 import android.net.Uri
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentError
 import com.knowledge.sporedoc.domain.util.Result
 import com.knowledge.sporedoc.ui.documents.FakeDocumentRepository
@@ -55,6 +56,7 @@ class ViewerViewModelTest {
 
     private val documentId = DocumentId("contrato.pdf")
     private val fileName = "contrato.pdf"
+    private val target = PixelSize(widthPx = 282, heightPx = 398)
 
     @Before
     fun setUp() {
@@ -156,7 +158,7 @@ class ViewerViewModelTest {
         }
         val viewModel = newViewModel(repository)
 
-        val result = viewModel.loadPage(0)
+        val result = viewModel.loadPage(0, target)
 
         assertEquals(image, result)
     }
@@ -166,9 +168,20 @@ class ViewerViewModelTest {
         val repository = repositoryWithPageCount(6)
         val viewModel = newViewModel(repository)
 
-        val result = viewModel.loadPage(0)
+        val result = viewModel.loadPage(0, target)
 
         assertNull(result)
+    }
+
+    @Test
+    fun `loadPage forwards the caller's target size to the repository, not a fixed size`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        val requestedSize = PixelSize(widthPx = 282, heightPx = 398)
+
+        viewModel.loadPage(2, requestedSize)
+
+        assertEquals(listOf(Triple(documentId, 2, requestedSize)), repository.getPageImageCalls)
     }
 
     // --- export ---

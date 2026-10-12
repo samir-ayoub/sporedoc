@@ -29,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.knowledge.sporedoc.R
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.ui.components.DeleteConfirmationDialog
 import com.knowledge.sporedoc.ui.theme.SporeDocColors
 import com.knowledge.sporedoc.ui.theme.SporeDocSpacing
@@ -49,7 +50,7 @@ import com.knowledge.sporedoc.ui.theme.effects.Vignette
 fun DocumentsContent(
     state: DocumentsUiState,
     onCapture: () -> Unit,
-    loadThumbnail: suspend (DocumentId) -> PageImage?,
+    loadThumbnail: suspend (DocumentId, PixelSize) -> PageImage?,
     onImportRequested: () -> Unit = {},
     onOpenDocument: (DocumentId, String) -> Unit = { _, _ -> },
     onShareRequested: (DocumentId) -> Unit = {},
@@ -170,7 +171,7 @@ private fun ImportGlyph(modifier: Modifier = Modifier) {
 @Composable
 private fun DocumentsBody(
     state: DocumentsUiState,
-    loadThumbnail: suspend (DocumentId) -> PageImage?,
+    loadThumbnail: suspend (DocumentId, PixelSize) -> PageImage?,
     onOpenDocument: (DocumentId, String) -> Unit,
     onShareRequested: (DocumentId) -> Unit,
     onRenameRequested: (DocumentId, String) -> Unit,
@@ -235,7 +236,7 @@ private fun DocumentsContentPreview() {
         DocumentsContent(
             state = DocumentsUiState(),
             onCapture = {},
-            loadThumbnail = { null }
+            loadThumbnail = { _, _ -> null }
         )
     }
 }

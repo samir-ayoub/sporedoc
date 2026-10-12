@@ -6,6 +6,7 @@ import androidx.core.content.FileProvider
 import com.knowledge.sporedoc.data.file.AndroidPdfFileAccess
 import com.knowledge.sporedoc.data.file.UriDocumentSource
 import com.knowledge.sporedoc.data.file.displayNameFor
+import com.knowledge.sporedoc.data.repository.CachingDocumentRepository
 import com.knowledge.sporedoc.data.repository.FileDocumentRepository
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
@@ -27,10 +28,12 @@ class AppContainer(context: Context) {
 
     private val documentsDir: File = context.filesDir
 
-    val documentRepository: DocumentRepository = FileDocumentRepository(
-        documentsDir = documentsDir,
-        pdfFileAccess = AndroidPdfFileAccess(),
-        clock = clock
+    val documentRepository: DocumentRepository = CachingDocumentRepository(
+        FileDocumentRepository(
+            documentsDir = documentsDir,
+            pdfFileAccess = AndroidPdfFileAccess(),
+            clock = clock
+        )
     )
 
     val groupDocumentsIntoSections: GroupDocumentsIntoSections = GroupDocumentsIntoSections(clock)

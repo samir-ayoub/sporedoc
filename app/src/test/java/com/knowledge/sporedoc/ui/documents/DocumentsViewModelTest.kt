@@ -6,6 +6,7 @@ import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.model.SectionLabel
 import com.knowledge.sporedoc.domain.repository.DocumentError
 import com.knowledge.sporedoc.domain.usecase.FormatDocumentMetaLine
@@ -44,6 +45,8 @@ class DocumentsViewModelTest {
         ZonedDateTime.of(2026, 10, 11, 14, 30, 0, 0, ZoneId.systemDefault()).toInstant()
 
     private val formatDocumentMetaLine = FormatDocumentMetaLine()
+
+    private val target = PixelSize(widthPx = 38, heightPx = 52)
 
     @Before
     fun setUp() {
@@ -148,7 +151,7 @@ class DocumentsViewModelTest {
         }
         val viewModel = newViewModel(repository)
 
-        val result = viewModel.loadThumbnail(doc.id)
+        val result = viewModel.loadThumbnail(doc.id, target)
 
         assertEquals(image, result)
     }
@@ -159,9 +162,24 @@ class DocumentsViewModelTest {
         val repository = FakeDocumentRepository(listOf(doc))
         val viewModel = newViewModel(repository)
 
-        val result = viewModel.loadThumbnail(doc.id)
+        val result = viewModel.loadThumbnail(doc.id, target)
 
         assertNull(result)
+    }
+
+    @Test
+    fun `loadThumbnail forwards the caller's target size to the repository, not a fixed size`() = runTest {
+        val doc = document("today.pdf", fixedNow)
+        val image = PageImage(bytes = byteArrayOf(1, 2, 3), width = 10, height = 10)
+        val repository = FakeDocumentRepository(listOf(doc)).apply {
+            thumbnails = mapOf(doc.id to Result.Success(image))
+        }
+        val viewModel = newViewModel(repository)
+        val requestedSize = PixelSize(widthPx = 76, heightPx = 104)
+
+        viewModel.loadThumbnail(doc.id, requestedSize)
+
+        assertEquals(listOf(doc.id to requestedSize), repository.getThumbnailCalls)
     }
 
     // --- onScanSucceeded ---

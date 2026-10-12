@@ -5,6 +5,7 @@ import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
 import com.knowledge.sporedoc.domain.model.PageImage
+import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentError
 import com.knowledge.sporedoc.domain.repository.DocumentRepository
 import com.knowledge.sporedoc.domain.util.Clock
@@ -42,16 +43,20 @@ class FileDocumentRepository(
             pdfFileAccess.pageCount(file)
         }
 
-    override suspend fun getPageImage(id: DocumentId, pageIndex: Int): Result<PageImage, DocumentError> =
+    override suspend fun getPageImage(
+        id: DocumentId,
+        pageIndex: Int,
+        targetSize: PixelSize
+    ): Result<PageImage, DocumentError> =
         withContext(ioDispatcher) {
             val file = findFile(id) ?: return@withContext Result.Failure(DocumentError.FileMissing(id))
-            pdfFileAccess.renderPage(file, pageIndex)
+            pdfFileAccess.renderPage(file, pageIndex, targetSize)
         }
 
-    override suspend fun getThumbnail(id: DocumentId): Result<PageImage, DocumentError> =
+    override suspend fun getThumbnail(id: DocumentId, targetSize: PixelSize): Result<PageImage, DocumentError> =
         withContext(ioDispatcher) {
             val file = findFile(id) ?: return@withContext Result.Failure(DocumentError.FileMissing(id))
-            pdfFileAccess.renderPage(file, 0)
+            pdfFileAccess.renderPage(file, 0, targetSize)
         }
 
     override suspend fun addDocument(

@@ -4,6 +4,11 @@ package com.knowledge.sporedoc.domain.model
  * A pure pixel payload crossing the repository boundary. Domain cannot hold
  * `android.graphics.Bitmap`, so pages and thumbnails are expressed as raw bytes plus
  * dimensions; the ui layer decodes them into a platform image.
+ *
+ * [bytes] holds a raw, uncompressed ARGB_8888 pixel buffer at exactly [width] x [height]
+ * pixels (the same byte layout `Bitmap.copyPixelsToBuffer`/`copyPixelsFromBuffer` use),
+ * never PNG or any other compressed format. [width]/[height] are the actually rendered
+ * size, which is the caller-requested [PixelSize], not the PDF page's native size.
  */
 data class PageImage(
     val bytes: ByteArray,
