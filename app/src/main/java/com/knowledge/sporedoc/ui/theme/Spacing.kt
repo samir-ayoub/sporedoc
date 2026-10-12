@@ -18,6 +18,11 @@ object SporeDocSpacing {
     val headerPaddingBottomDp: Dp = 28.dp
     val subtitleMarginTopDp: Dp = 16.dp
 
+    // ui/documents/DocumentsHeader collapsed state (SD-16)
+    val headerCollapsedHeightDp: Dp = 48.dp
+    val headerCollapsedIconSizeDp: Dp = 28.dp
+    val headerCollapsedIconLabelGapDp: Dp = 10.dp
+
     // components.DocumentRow
     val rowPaddingStartDp: Dp = 24.dp
     val rowPaddingEndDp: Dp = 10.dp
