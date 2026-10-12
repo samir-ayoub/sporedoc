@@ -112,3 +112,32 @@ class PageZoomState(private val maxScale: Float = 4f) {
         const val MIN_SCALE = 0.1f
     }
 }
+
+/**
+ * The unscaled (1x) size at which an image of [contentAspectRatio] (width / height) is laid
+ * out inside a [containerWidth] x [containerHeight] box under `ContentScale.Fit` semantics:
+ * the whole image fits inside the box, touching it on exactly one axis and letterboxed on
+ * the other. Callers must pass this — not the container size, and not the image's raw pixel
+ * resolution — as the `contentWidth`/`contentHeight` of [PageZoomState]'s gesture methods,
+ * since the pan clamp measures the content's actual on-screen footprint against the
+ * container, and a mismatch there was leaving the viewer's zoomed corners unreachable.
+ */
+fun fitContentSize(
+    containerWidth: Float,
+    containerHeight: Float,
+    contentAspectRatio: Float
+): Pair<Float, Float> {
+    if (containerWidth <= 0f || containerHeight <= 0f || contentAspectRatio <= 0f) {
+        return containerWidth to containerHeight
+    }
+    val containerAspectRatio = containerWidth / containerHeight
+    return if (containerAspectRatio > contentAspectRatio) {
+        val height = containerHeight
+        val width = height * contentAspectRatio
+        width to height
+    } else {
+        val width = containerWidth
+        val height = width / contentAspectRatio
+        width to height
+    }
+}

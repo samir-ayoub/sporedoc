@@ -69,6 +69,17 @@ fun ViewerZoomablePage(
     var offsetX by remember(pageIndex) { mutableFloatStateOf(0f) }
     var offsetY by remember(pageIndex) { mutableFloatStateOf(0f) }
 
+    // The full-bleed image above 1x (R8) is laid out to fill the container, then fitted to
+    // it by aspect ratio - it is this fitted footprint, not the container itself, that the
+    // pan clamp must measure the content against to let the user reach every corner.
+    val (contentWidth, contentHeight) = remember(containerSize) {
+        fitContentSize(
+            containerWidth = containerSize.width.toFloat(),
+            containerHeight = containerSize.height.toFloat(),
+            contentAspectRatio = SporeDocSpacing.viewerPageAspectRatio
+        )
+    }
+
     fun syncFromState() {
         scale = zoomState.scale
         offsetX = zoomState.offsetX
@@ -83,8 +94,8 @@ fun ViewerZoomablePage(
             .pointerInput(pageIndex) {
                 detectTransformGestures { centroid, pan, zoom, _ ->
                     zoomState.onGestureChange(
-                        contentWidth = targetSize.widthPx.toFloat(),
-                        contentHeight = targetSize.heightPx.toFloat(),
+                        contentWidth = contentWidth,
+                        contentHeight = contentHeight,
                         containerWidth = containerSize.width.toFloat(),
                         containerHeight = containerSize.height.toFloat(),
                         zoomChange = zoom,
@@ -110,8 +121,8 @@ fun ViewerZoomablePage(
                 detectTapGestures(
                     onDoubleTap = { tap ->
                         zoomState.onDoubleTap(
-                            contentWidth = targetSize.widthPx.toFloat(),
-                            contentHeight = targetSize.heightPx.toFloat(),
+                            contentWidth = contentWidth,
+                            contentHeight = contentHeight,
                             containerWidth = containerSize.width.toFloat(),
                             containerHeight = containerSize.height.toFloat(),
                             tapX = tap.x,
