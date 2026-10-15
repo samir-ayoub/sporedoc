@@ -31,6 +31,24 @@
     <string name="rename_dialog_error_invalid_name">Please enter a name.</string>
     <string name="rename_dialog_error_name_collision">A document with that name already exists.</string>
 
+    <!-- DocumentsScreen selection mode (SD-17) -->
+    <string name="select_action_label">[ SELECT ]</string>
+    <string name="select_action_content_description">Select documents</string>
+    <string name="selection_clear_content_description">Exit selection mode</string>
+    <string name="selection_clear_symbol">✕</string>
+    <string name="selection_counter_template">%1$s SELECTED</string>
+    <string name="select_all_label">[ ALL ]</string>
+    <string name="select_all_content_description">Select all documents</string>
+    <string name="row_checkbox_selected_content_description">Selected</string>
+    <string name="row_checkbox_unselected_content_description">Not selected</string>
+    <string name="selection_summary_template">%1$d docs · %2$d pp · %3$s MB</string>
+    <string name="contextual_share_label">SHARE</string>
+    <string name="contextual_share_content_description">Share selected documents</string>
+    <string name="contextual_merge_label">MERGE</string>
+    <string name="contextual_merge_content_description">Merge selected documents</string>
+    <string name="contextual_purge_label">PURGE</string>
+    <string name="contextual_purge_content_description">Purge selected documents</string>
+
     <!-- ViewerScreen -->
     <string name="viewer_back_content_description">Back</string>
     <string name="viewer_delete_content_description">Delete file</string>

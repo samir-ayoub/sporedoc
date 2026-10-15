@@ -13,7 +13,9 @@ import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
 import com.knowledge.sporedoc.domain.repository.DocumentRepository
 import com.knowledge.sporedoc.domain.usecase.FormatDocumentMetaLine
+import com.knowledge.sporedoc.domain.usecase.FormatSelectionCounter
 import com.knowledge.sporedoc.domain.usecase.GroupDocumentsIntoSections
+import com.knowledge.sporedoc.domain.usecase.SummarizeSelectedDocuments
 import com.knowledge.sporedoc.domain.util.Clock
 import java.io.File
 import java.time.Instant
@@ -41,6 +43,10 @@ class AppContainer(context: Context) {
     val groupDocumentsIntoSections: GroupDocumentsIntoSections = GroupDocumentsIntoSections(clock)
 
     val formatDocumentMetaLine: FormatDocumentMetaLine = FormatDocumentMetaLine()
+
+    val summarizeSelectedDocuments: SummarizeSelectedDocuments = SummarizeSelectedDocuments()
+
+    val formatSelectionCounter: FormatSelectionCounter = FormatSelectionCounter()
 
     /** Wires a scanner-result `Uri` to the domain's [DocumentSource] seam. */
     val documentSourceFor: (Uri) -> DocumentSource = { uri ->

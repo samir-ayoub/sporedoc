@@ -158,7 +158,12 @@ fun DocumentsScreen(
             onRenameCancelled = viewModel::onRenameCancelled,
             onDeleteRequested = viewModel::onDeleteRequested,
             onDeleteConfirmed = viewModel::onDeleteConfirmed,
-            onDeleteCancelled = viewModel::onDeleteCancelled
+            onDeleteCancelled = viewModel::onDeleteCancelled,
+            onSelectModeEntered = viewModel::onSelectModeEntered,
+            onSelectionCleared = viewModel::onSelectionCleared,
+            onSelectAllToggled = viewModel::onSelectAllToggled,
+            onRowLongPressed = viewModel::onRowLongPressed,
+            onRowToggled = viewModel::onRowToggled
         )
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }

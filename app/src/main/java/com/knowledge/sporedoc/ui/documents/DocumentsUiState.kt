@@ -7,7 +7,22 @@ import com.knowledge.sporedoc.domain.model.SectionLabel
 data class DocumentsUiState(
     val sections: List<DocumentSectionUi> = emptyList(),
     val renameDialog: RenameDialogUiState? = null,
-    val pendingDeleteId: DocumentId? = null
+    val pendingDeleteId: DocumentId? = null,
+    val selectionMode: SelectionModeUiState? = null
+)
+
+/** State while the list is in multi-select mode (SD-17); null in [DocumentsUiState] means it's off. */
+data class SelectionModeUiState(
+    val selectedIds: Set<DocumentId>,
+    val counterText: String,
+    val summary: SelectionSummaryUi
+)
+
+/** The selected documents' totals, raw digits only (no unit, no label; see strings.xml). */
+data class SelectionSummaryUi(
+    val documentCount: Int,
+    val totalPages: Int,
+    val totalSizeMb: String
 )
 
 /** One section rendered under a `SectionHeader` label, with its already-ordered rows. */

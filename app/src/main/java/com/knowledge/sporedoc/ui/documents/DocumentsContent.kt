@@ -58,6 +58,11 @@ fun DocumentsContent(
     onDeleteRequested: (DocumentId) -> Unit = {},
     onDeleteConfirmed: () -> Unit = {},
     onDeleteCancelled: () -> Unit = {},
+    onSelectModeEntered: () -> Unit = {},
+    onSelectionCleared: () -> Unit = {},
+    onSelectAllToggled: () -> Unit = {},
+    onRowLongPressed: (DocumentId) -> Unit = {},
+    onRowToggled: (DocumentId) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -82,6 +87,11 @@ fun DocumentsContent(
             onShareRequested = onShareRequested,
             onRenameRequested = onRenameRequested,
             onDeleteRequested = onDeleteRequested,
+            onSelectModeEntered = onSelectModeEntered,
+            onSelectionCleared = onSelectionCleared,
+            onSelectAllToggled = onSelectAllToggled,
+            onRowLongPressed = onRowLongPressed,
+            onRowToggled = onRowToggled,
             listState = listState,
             modifier = Modifier.fillMaxSize()
         )
@@ -89,11 +99,19 @@ fun DocumentsContent(
             isCollapsed = isHeaderCollapsed,
             modifier = Modifier.align(Alignment.TopStart)
         )
-        BottomDock(
-            onImportRequested = onImportRequested,
-            onCapture = onCapture,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
+        val selectionMode = state.selectionMode
+        if (selectionMode != null) {
+            DocumentsContextualBar(
+                summary = selectionMode.summary,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        } else {
+            BottomDock(
+                onImportRequested = onImportRequested,
+                onCapture = onCapture,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+        }
         Vignette()
         Grain()
     }
@@ -180,15 +198,25 @@ private fun DocumentsBody(
     onShareRequested: (DocumentId) -> Unit,
     onRenameRequested: (DocumentId, String) -> Unit,
     onDeleteRequested: (DocumentId) -> Unit,
+    onSelectModeEntered: () -> Unit,
+    onSelectionCleared: () -> Unit,
+    onSelectAllToggled: () -> Unit,
+    onRowLongPressed: (DocumentId) -> Unit,
+    onRowToggled: (DocumentId) -> Unit,
     listState: LazyListState,
     modifier: Modifier = Modifier
 ) {
     if (state.sections.isEmpty()) {
-        Box(
-            modifier = modifier.padding(top = SporeDocSpacing.headerHeightDp),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(text = stringResource(R.string.documents_empty_state), style = SporeDocTypography.fileMeta)
+        Column(modifier = modifier.padding(top = SporeDocSpacing.headerHeightDp)) {
+            DocumentsSelectionBar(
+                selectionMode = state.selectionMode,
+                onSelectModeEntered = onSelectModeEntered,
+                onSelectionCleared = onSelectionCleared,
+                onSelectAllToggled = onSelectAllToggled
+            )
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(text = stringResource(R.string.documents_empty_state), style = SporeDocTypography.fileMeta)
+            }
         }
         return
     }
@@ -201,6 +229,14 @@ private fun DocumentsBody(
             bottom = SporeDocSpacing.bodyBottomContentPaddingDp
         )
     ) {
+        item(key = "selection-bar") {
+            DocumentsSelectionBar(
+                selectionMode = state.selectionMode,
+                onSelectModeEntered = onSelectModeEntered,
+                onSelectionCleared = onSelectionCleared,
+                onSelectAllToggled = onSelectAllToggled
+            )
+        }
         state.sections.forEach { section ->
             item(key = "header-${section.label}") {
                 DocumentSectionHeader(label = section.label)
@@ -212,7 +248,10 @@ private fun DocumentsBody(
                     onOpenDocument = onOpenDocument,
                     onShareRequested = onShareRequested,
                     onRenameRequested = onRenameRequested,
-                    onDeleteRequested = onDeleteRequested
+                    onDeleteRequested = onDeleteRequested,
+                    selectionMode = state.selectionMode,
+                    onRowLongPressed = onRowLongPressed,
+                    onRowToggled = onRowToggled
                 )
             }
         }
