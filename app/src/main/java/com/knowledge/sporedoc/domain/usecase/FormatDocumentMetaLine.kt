@@ -1,8 +1,7 @@
 package com.knowledge.sporedoc.domain.usecase
 
 import com.knowledge.sporedoc.domain.model.Document
-import java.math.BigDecimal
-import java.math.RoundingMode
+import com.knowledge.sporedoc.domain.util.formatSizeMb
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
@@ -18,16 +17,7 @@ class FormatDocumentMetaLine {
         return "${document.pageCount} PP  /  $sizeMb MB  /  $date"
     }
 
-    private fun formatSizeMb(sizeBytes: Long): String {
-        val raw = BigDecimal(sizeBytes).divide(BYTES_PER_MB, 4, RoundingMode.HALF_UP)
-        var rounded = raw.setScale(1, RoundingMode.HALF_UP)
-        if (rounded < MIN_SIZE) rounded = MIN_SIZE
-        return rounded.toPlainString()
-    }
-
     private companion object {
         val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
-        val BYTES_PER_MB: BigDecimal = BigDecimal(1_048_576)
-        val MIN_SIZE: BigDecimal = BigDecimal("0.1")
     }
 }

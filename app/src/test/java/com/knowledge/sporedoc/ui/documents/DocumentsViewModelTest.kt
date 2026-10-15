@@ -10,7 +10,9 @@ import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.model.SectionLabel
 import com.knowledge.sporedoc.domain.repository.DocumentError
 import com.knowledge.sporedoc.domain.usecase.FormatDocumentMetaLine
+import com.knowledge.sporedoc.domain.usecase.FormatSelectionCounter
 import com.knowledge.sporedoc.domain.usecase.GroupDocumentsIntoSections
+import com.knowledge.sporedoc.domain.usecase.SummarizeSelectedDocuments
 import com.knowledge.sporedoc.domain.util.Result
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -69,6 +71,8 @@ class DocumentsViewModelTest {
         documentRepository = repository,
         groupDocumentsIntoSections = groupUseCase(),
         formatDocumentMetaLine = formatDocumentMetaLine,
+        summarizeSelectedDocuments = SummarizeSelectedDocuments(),
+        formatSelectionCounter = FormatSelectionCounter(),
         documentSourceFor = documentSourceFor,
         shareUriFor = shareUriFor,
         displayNameFor = displayNameFor
@@ -747,5 +751,179 @@ class DocumentsViewModelTest {
         assertEquals(listOf(DocumentsEffect.ShowDeleteError), effects)
         assertTrue(viewModel.uiState.value.sections.isEmpty())
         job.cancel()
+    }
+
+    // --- selection mode (SD-17) ---
+
+    @Test
+    fun `initial state is not in selection mode`() = runTest {
+        val repository = FakeDocumentRepository(listOf(document("contrato.pdf", fixedNow)))
+        val viewModel = newViewModel(repository)
+
+        assertNull(viewModel.uiState.value.selectionMode)
+    }
+
+    @Test
+    fun `onSelectModeEntered enters selection mode with no row selected and a 0 counter`() = runTest {
+        val repository = FakeDocumentRepository(listOf(document("contrato.pdf", fixedNow)))
+        val viewModel = newViewModel(repository)
+
+        viewModel.onSelectModeEntered()
+
+        val selectionMode = viewModel.uiState.value.selectionMode
+        assertEquals(emptySet<DocumentId>(), selectionMode?.selectedIds)
+        assertEquals("0", selectionMode?.counterText)
+        assertEquals(0, selectionMode?.summary?.documentCount)
+    }
+
+    @Test
+    fun `onRowLongPressed outside selection mode enters it with that row already selected`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+
+        viewModel.onRowLongPressed(doc.id)
+
+        val selectionMode = viewModel.uiState.value.selectionMode
+        assertEquals(setOf(doc.id), selectionMode?.selectedIds)
+        assertEquals("01", selectionMode?.counterText)
+    }
+
+    @Test
+    fun `onRowLongPressed is a no-op when already in selection mode`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val repository = FakeDocumentRepository(listOf(a, b))
+        val viewModel = newViewModel(repository)
+        viewModel.onRowLongPressed(a.id)
+
+        viewModel.onRowLongPressed(b.id)
+
+        assertEquals(setOf(a.id), viewModel.uiState.value.selectionMode?.selectedIds)
+    }
+
+    @Test
+    fun `onRowToggled is a no-op when not in selection mode`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+
+        viewModel.onRowToggled(doc.id)
+
+        assertNull(viewModel.uiState.value.selectionMode)
+    }
+
+    @Test
+    fun `onRowToggled selects an unselected row and deselects it on a second toggle`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+
+        viewModel.onRowToggled(doc.id)
+        assertEquals(setOf(doc.id), viewModel.uiState.value.selectionMode?.selectedIds)
+        assertEquals("01", viewModel.uiState.value.selectionMode?.counterText)
+
+        viewModel.onRowToggled(doc.id)
+        assertEquals(emptySet<DocumentId>(), viewModel.uiState.value.selectionMode?.selectedIds)
+        assertEquals("0", viewModel.uiState.value.selectionMode?.counterText)
+    }
+
+    @Test
+    fun `deselecting the last selected row one by one keeps selection mode active with 0 SELECTED`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val c = document("c.pdf", fixedNow.minusSeconds(120))
+        val repository = FakeDocumentRepository(listOf(a, b, c))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onRowToggled(a.id)
+        viewModel.onRowToggled(b.id)
+        viewModel.onRowToggled(c.id)
+        assertEquals("03", viewModel.uiState.value.selectionMode?.counterText)
+
+        viewModel.onRowToggled(a.id)
+        viewModel.onRowToggled(b.id)
+        viewModel.onRowToggled(c.id)
+
+        val selectionMode = viewModel.uiState.value.selectionMode
+        assertEquals(emptySet<DocumentId>(), selectionMode?.selectedIds)
+        assertEquals("0", selectionMode?.counterText)
+        assertTrue(selectionMode != null)
+    }
+
+    @Test
+    fun `onSelectAllToggled is a no-op when not in selection mode`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+
+        viewModel.onSelectAllToggled()
+
+        assertNull(viewModel.uiState.value.selectionMode)
+    }
+
+    @Test
+    fun `onSelectAllToggled selects all documents when none are selected`() = runTest {
+        val documents = (1..11).map { document("doc$it.pdf", fixedNow.minusSeconds(it.toLong())) }
+        val repository = FakeDocumentRepository(documents)
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+
+        viewModel.onSelectAllToggled()
+
+        val selectionMode = viewModel.uiState.value.selectionMode
+        assertEquals(documents.map { it.id }.toSet(), selectionMode?.selectedIds)
+        assertEquals("11", selectionMode?.counterText)
+    }
+
+    @Test
+    fun `onSelectAllToggled deselects all when every document is already selected, staying in selection mode`() = runTest {
+        val documents = (1..11).map { document("doc$it.pdf", fixedNow.minusSeconds(it.toLong())) }
+        val repository = FakeDocumentRepository(documents)
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onSelectAllToggled()
+
+        viewModel.onSelectAllToggled()
+
+        val selectionMode = viewModel.uiState.value.selectionMode
+        assertTrue(selectionMode != null)
+        assertEquals(emptySet<DocumentId>(), selectionMode?.selectedIds)
+        assertEquals("0", selectionMode?.counterText)
+    }
+
+    @Test
+    fun `onSelectionCleared exits selection mode and clears the selection`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val repository = FakeDocumentRepository(listOf(a, b))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectAllToggled()
+        viewModel.onRowLongPressed(a.id)
+        viewModel.onRowToggled(b.id)
+
+        viewModel.onSelectionCleared()
+
+        assertNull(viewModel.uiState.value.selectionMode)
+    }
+
+    @Test
+    fun `the selection summary reflects only the selected documents' totals`() = runTest {
+        val selectedA = document("a.pdf", fixedNow, pageCount = 3, sizeBytes = 2_000_000L)
+        val selectedB = document("b.pdf", fixedNow.minusSeconds(60), pageCount = 4, sizeBytes = 3_000_000L)
+        val selectedC = document("c.pdf", fixedNow.minusSeconds(120), pageCount = 4, sizeBytes = 2_654_605L)
+        val notSelected = document("d.pdf", fixedNow.minusSeconds(180), pageCount = 50, sizeBytes = 50_000_000L)
+        val repository = FakeDocumentRepository(listOf(selectedA, selectedB, selectedC, notSelected))
+        val viewModel = newViewModel(repository)
+        viewModel.onRowLongPressed(selectedA.id)
+        viewModel.onRowToggled(selectedB.id)
+        viewModel.onRowToggled(selectedC.id)
+
+        val summary = viewModel.uiState.value.selectionMode?.summary
+
+        assertEquals(3, summary?.documentCount)
+        assertEquals(11, summary?.totalPages)
+        assertEquals("7.3", summary?.totalSizeMb)
     }
 }

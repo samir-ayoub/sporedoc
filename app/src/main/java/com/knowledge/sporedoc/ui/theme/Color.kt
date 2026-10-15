@@ -49,4 +49,8 @@ object SporeDocColors {
     // SD-15: footer box backgrounds, pre-composed with their alpha (bgEdge at 55%/30%).
     val footerBoxBackground = Color(0x8C030305)
     val footerBoxBackgroundDisabled = Color(0x4D030305)
+
+    // SD-17: selection mode tokens (no handover-JSON entry; picked against the reference PNG).
+    val rust = Color(0xFFB7410E)
+    val selectionTint = Color(0x26D4AF37)
 }

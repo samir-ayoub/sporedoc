@@ -64,4 +64,15 @@ object SporeDocSpacing {
 
     // ui/viewer/DeleteConfirmationDialog
     val dialogPaddingDp: Dp = 20.dp
+
+    // ui/documents/DocumentsSelectionBar (SD-17)
+    val selectionBarHeightDp: Dp = 44.dp
+    val selectionBarPaddingHorizontalDp: Dp = 24.dp
+    val rowCheckboxSizeDp: Dp = 20.dp
+
+    // ui/documents/DocumentsContextualBar (SD-17)
+    val contextualBarPaddingHorizontalDp: Dp = 24.dp
+    val contextualBarPaddingTopDp: Dp = 18.dp
+    val contextualBarPaddingBottomDp: Dp = 24.dp
+    val contextualBarSummaryGapDp: Dp = 10.dp
 }

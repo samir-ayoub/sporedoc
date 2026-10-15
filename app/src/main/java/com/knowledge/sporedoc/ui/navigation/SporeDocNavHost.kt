@@ -75,6 +75,8 @@ fun SporeDocNavHost(
                         documentRepository = appContainer.documentRepository,
                         groupDocumentsIntoSections = appContainer.groupDocumentsIntoSections,
                         formatDocumentMetaLine = appContainer.formatDocumentMetaLine,
+                        summarizeSelectedDocuments = appContainer.summarizeSelectedDocuments,
+                        formatSelectionCounter = appContainer.formatSelectionCounter,
                         documentSourceFor = appContainer.documentSourceFor,
                         shareUriFor = appContainer.shareUriFor,
                         displayNameFor = appContainer.displayNameFor

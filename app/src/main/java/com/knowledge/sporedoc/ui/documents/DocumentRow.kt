@@ -3,6 +3,7 @@ package com.knowledge.sporedoc.ui.documents
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import com.knowledge.sporedoc.R
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PageImage
@@ -54,9 +56,28 @@ fun DocumentRow(
     onShareRequested: (DocumentId) -> Unit = {},
     onRenameRequested: (DocumentId, String) -> Unit = { _, _ -> },
     onDeleteRequested: (DocumentId) -> Unit = {},
+    selectionMode: SelectionModeUiState? = null,
+    onRowLongPressed: (DocumentId) -> Unit = {},
+    onRowToggled: (DocumentId) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
+    val isSelected = selectionMode != null && row.id in selectionMode.selectedIds
+    val rowModifier = if (selectionMode != null) {
+        Modifier
+            .background(if (isSelected) SporeDocColors.selectionTint else androidx.compose.ui.graphics.Color.Transparent)
+            .border(
+                width = if (isSelected) SporeDocStroke.hairlineDp else 0.dp,
+                color = if (isSelected) SporeDocColors.goldMatte else androidx.compose.ui.graphics.Color.Transparent
+            )
+            .combinedClickable(onClick = { onRowToggled(row.id) })
+    } else {
+        Modifier.combinedClickable(
+            onClick = { onOpenDocument(row.id, row.fileName) },
+            onLongClick = { onRowLongPressed(row.id) }
+        )
+    }
+
+    Column(modifier = modifier.fillMaxWidth().then(rowModifier)) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -70,8 +91,7 @@ fun DocumentRow(
         ) {
             DocumentThumbnail(
                 id = row.id,
-                loadThumbnail = loadThumbnail,
-                modifier = Modifier.clickable { onOpenDocument(row.id, row.fileName) }
+                loadThumbnail = loadThumbnail
             )
             Column(
                 modifier = Modifier
@@ -82,23 +102,26 @@ fun DocumentRow(
                     text = row.fileName,
                     style = SporeDocTypography.fileName,
                     maxLines = SporeDocTypography.fileNameMaxLines,
-                    overflow = SporeDocTypography.fileNameOverflow,
-                    modifier = Modifier.clickable { onOpenDocument(row.id, row.fileName) }
+                    overflow = SporeDocTypography.fileNameOverflow
                 )
                 Text(
                     text = row.metaLine,
                     style = SporeDocTypography.fileMeta,
-                    modifier = Modifier
-                        .padding(top = SporeDocSpacing.textColumnGapDp)
-                        .clickable { onOpenDocument(row.id, row.fileName) }
+                    modifier = Modifier.padding(top = SporeDocSpacing.textColumnGapDp)
                 )
-                ShareTextAction(onClick = { onShareRequested(row.id) })
+                if (selectionMode == null) {
+                    ShareTextAction(onClick = { onShareRequested(row.id) })
+                }
             }
-            MoreOptionsButton(
-                onRename = { onRenameRequested(row.id, row.fileName) },
-                onShare = { onShareRequested(row.id) },
-                onDelete = { onDeleteRequested(row.id) }
-            )
+            if (selectionMode == null) {
+                MoreOptionsButton(
+                    onRename = { onRenameRequested(row.id, row.fileName) },
+                    onShare = { onShareRequested(row.id) },
+                    onDelete = { onDeleteRequested(row.id) }
+                )
+            } else {
+                RowCheckbox(isSelected = isSelected)
+            }
         }
         Box(
             modifier = Modifier
@@ -112,6 +135,33 @@ fun DocumentRow(
                     .background(SporeDocColors.goldDividerSoft)
             )
         }
+    }
+}
+
+/** The square checkbox shown in place of `[ SHARE ]`/`⋮` in selection mode (R7/R13). */
+@Composable
+private fun RowCheckbox(isSelected: Boolean, modifier: Modifier = Modifier) {
+    val description = stringResource(
+        if (isSelected) {
+            R.string.row_checkbox_selected_content_description
+        } else {
+            R.string.row_checkbox_unselected_content_description
+        }
+    )
+    Box(
+        modifier = modifier
+            .size(SporeDocSpacing.minTouchTargetDp)
+            .semantics {
+                contentDescription = description
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(SporeDocSpacing.rowCheckboxSizeDp)
+                .background(if (isSelected) SporeDocColors.goldMatte else androidx.compose.ui.graphics.Color.Transparent)
+                .border(SporeDocStroke.frameDp, SporeDocColors.goldMatte)
+        )
     }
 }
 

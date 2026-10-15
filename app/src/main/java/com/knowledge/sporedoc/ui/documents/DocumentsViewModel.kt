@@ -3,6 +3,7 @@ package com.knowledge.sporedoc.ui.documents
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
 import com.knowledge.sporedoc.domain.model.PageImage
@@ -10,7 +11,9 @@ import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentError
 import com.knowledge.sporedoc.domain.repository.DocumentRepository
 import com.knowledge.sporedoc.domain.usecase.FormatDocumentMetaLine
+import com.knowledge.sporedoc.domain.usecase.FormatSelectionCounter
 import com.knowledge.sporedoc.domain.usecase.GroupDocumentsIntoSections
+import com.knowledge.sporedoc.domain.usecase.SummarizeSelectedDocuments
 import com.knowledge.sporedoc.domain.util.Result
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +33,8 @@ class DocumentsViewModel(
     private val documentRepository: DocumentRepository,
     private val groupDocumentsIntoSections: GroupDocumentsIntoSections,
     private val formatDocumentMetaLine: FormatDocumentMetaLine,
+    private val summarizeSelectedDocuments: SummarizeSelectedDocuments,
+    private val formatSelectionCounter: FormatSelectionCounter,
     private val documentSourceFor: (Uri) -> DocumentSource,
     private val shareUriFor: (DocumentId) -> Uri,
     private val displayNameFor: (Uri) -> String? = { null }
@@ -40,6 +45,8 @@ class DocumentsViewModel(
 
     private val _effects = Channel<DocumentsEffect>(Channel.BUFFERED)
     val effects: Flow<DocumentsEffect> = _effects.receiveAsFlow()
+
+    private var loadedDocuments: List<Document> = emptyList()
 
     init {
         viewModelScope.launch { refresh() }
@@ -202,17 +209,71 @@ class DocumentsViewModel(
         }
     }
 
+    /** Enters selection mode with no row selected (the `[ SELECT ]` action). */
+    fun onSelectModeEntered() {
+        setSelection(emptySet())
+    }
+
+    /** No-op if already in selection mode; otherwise enters it with [id] already selected. */
+    fun onRowLongPressed(id: DocumentId) {
+        if (_uiState.value.selectionMode != null) return
+        setSelection(setOf(id))
+    }
+
+    /** No-op if not in selection mode; otherwise flips [id]'s membership in the selection. */
+    fun onRowToggled(id: DocumentId) {
+        val current = _uiState.value.selectionMode ?: return
+        val updated = if (id in current.selectedIds) {
+            current.selectedIds - id
+        } else {
+            current.selectedIds + id
+        }
+        setSelection(updated)
+    }
+
+    /** No-op if not in selection mode; otherwise toggles between all-selected and none-selected. */
+    fun onSelectAllToggled() {
+        val current = _uiState.value.selectionMode ?: return
+        val allIds = loadedDocuments.map { it.id }.toSet()
+        val updated = if (current.selectedIds == allIds) emptySet() else allIds
+        setSelection(updated)
+    }
+
+    /** Exits selection mode, clearing the whole selection (the `✕` action). */
+    fun onSelectionCleared() {
+        _uiState.value = _uiState.value.copy(selectionMode = null)
+    }
+
+    private fun setSelection(selectedIds: Set<DocumentId>) {
+        val selectedDocuments = loadedDocuments.filter { it.id in selectedIds }
+        val summary = summarizeSelectedDocuments(selectedDocuments)
+        _uiState.value = _uiState.value.copy(
+            selectionMode = SelectionModeUiState(
+                selectedIds = selectedIds,
+                counterText = formatSelectionCounter(selectedIds.size),
+                summary = SelectionSummaryUi(
+                    documentCount = summary.documentCount,
+                    totalPages = summary.totalPages,
+                    totalSizeMb = summary.totalSizeMb
+                )
+            )
+        )
+    }
+
     private fun stripPdfExtension(fileName: String): String =
         if (fileName.endsWith(".pdf")) fileName.removeSuffix(".pdf") else fileName
 
     private suspend fun refresh() {
         when (val result = documentRepository.listDocuments()) {
-            is Result.Success -> _uiState.value = _uiState.value.copy(sections = buildSections(result.value))
+            is Result.Success -> {
+                loadedDocuments = result.value
+                _uiState.value = _uiState.value.copy(sections = buildSections(result.value))
+            }
             is Result.Failure -> Unit // keep the previous state; no AC in this delivery covers this case
         }
     }
 
-    private fun buildSections(documents: List<com.knowledge.sporedoc.domain.model.Document>): List<DocumentSectionUi> =
+    private fun buildSections(documents: List<Document>): List<DocumentSectionUi> =
         groupDocumentsIntoSections(documents).map { section ->
             DocumentSectionUi(
                 label = section.label,
