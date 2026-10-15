@@ -17,6 +17,8 @@ object SporeDocSpacing {
     val headerHeightDp: Dp = 196.dp
     val headerPaddingBottomDp: Dp = 28.dp
     val subtitleMarginTopDp: Dp = 16.dp
+    val compactHeaderHeightDp: Dp = 48.dp
+    val compactHeaderPaddingBottomDp: Dp = 12.dp
 
     // components.DocumentRow
     val rowPaddingStartDp: Dp = 24.dp
