@@ -24,6 +24,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.knowledge.sporedoc.R
 import com.knowledge.sporedoc.ui.theme.SporeDocColors
 import com.knowledge.sporedoc.ui.theme.SporeDocSpacing
@@ -45,7 +47,7 @@ fun DocumentsFooter(
         horizontalArrangement = Arrangement.spacedBy(SporeDocSpacing.footerBoxGapDp)
     ) {
         ImportBox(onClick = onImportRequested, modifier = Modifier.weight(1f))
-        CaptureBox(onClick = onCapture, modifier = Modifier.weight(1f))
+        CaptureBox(onClick = onCapture, modifier = Modifier.weight(2f))
         QrCodeBox(modifier = Modifier.weight(1f))
     }
 }
@@ -68,7 +70,13 @@ private fun ImportBox(onClick: () -> Unit, modifier: Modifier = Modifier) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             ImportGlyph()
             Spacer(modifier = Modifier.height(SporeDocSpacing.footerIconLabelGapDp))
-            Text(text = stringResource(R.string.import_label), style = SporeDocTypography.primaryButton)
+            Text(
+                text = stringResource(
+                R.string.import_label),
+                style = SporeDocTypography.primaryButton,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Black
+            )
         }
     }
 }
@@ -115,7 +123,9 @@ private fun QrCodeBox(modifier: Modifier = Modifier) {
             Text(
                 text = stringResource(R.string.qr_code_label),
                 style = SporeDocTypography.primaryButton,
-                color = SporeDocColors.qrCodeMuted
+                color = SporeDocColors.qrCodeMuted,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Black
             )
         }
     }

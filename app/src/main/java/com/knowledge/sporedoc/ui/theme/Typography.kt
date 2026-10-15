@@ -21,6 +21,14 @@ object SporeDocTypography {
         color = SporeDocColors.ivory,
     )
 
+    val wordmarkCompact = TextStyle(
+        fontFamily = SporeDocFonts.display,
+        fontSize = 24.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 6.sp,
+        color = SporeDocColors.ivory,
+    )
+
     val subtitle = TextStyle(
         fontFamily = SporeDocFonts.mono,
         fontWeight = FontWeight(400),
