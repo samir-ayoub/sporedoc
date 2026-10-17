@@ -12,9 +12,14 @@ data class DocumentsUiState(
     val isPurgeConfirmationVisible: Boolean = false
 )
 
-/** State while the list is in multi-select mode (SD-17); null in [DocumentsUiState] means it's off. */
+/**
+ * State while the list is in multi-select mode (SD-17); null in [DocumentsUiState] means it's off.
+ * [selectedIds] preserves selection (tap) order with no duplicates (SD-19 R1): the first
+ * occurrence is the tap order, and deselecting then reselecting a document re-appends it at
+ * the current end rather than keeping its old position.
+ */
 data class SelectionModeUiState(
-    val selectedIds: Set<DocumentId>,
+    val selectedIds: List<DocumentId>,
     val counterText: String,
     val summary: SelectionSummaryUi
 )

@@ -50,6 +50,7 @@ fun DocumentsScreen(
     val deleteErrorMessage = stringResource(R.string.delete_error_message)
     val renameErrorMessage = stringResource(R.string.rename_error_message)
     val importErrorMessage = stringResource(R.string.import_error_message)
+    val mergeErrorMessage = stringResource(R.string.merge_error_message)
 
     // Guards against opening the viewer more than once for this screen instance (e.g. two
     // rapid taps on the same row during the enter transition, SD-14): the first call wins,
@@ -124,6 +125,7 @@ fun DocumentsScreen(
                 DocumentsEffect.ShowDeleteError -> snackbarHostState.showSnackbar(deleteErrorMessage)
                 DocumentsEffect.ShowRenameError -> snackbarHostState.showSnackbar(renameErrorMessage)
                 DocumentsEffect.ShowImportError -> snackbarHostState.showSnackbar(importErrorMessage)
+                DocumentsEffect.ShowMergeError -> snackbarHostState.showSnackbar(mergeErrorMessage)
                 is DocumentsEffect.OpenDocument -> guardedOnOpenDocument(effect.id, effect.fileName)
                 is DocumentsEffect.ShareDocument -> {
                     val intent = Intent(Intent.ACTION_SEND).apply {
@@ -173,6 +175,7 @@ fun DocumentsScreen(
             onRowLongPressed = viewModel::onRowLongPressed,
             onRowToggled = viewModel::onRowToggled,
             onShareSelectedRequested = viewModel::onShareSelectedRequested,
+            onMergeRequested = viewModel::onMergeRequested,
             onPurgeRequested = viewModel::onPurgeRequested,
             onPurgeConfirmed = viewModel::onPurgeConfirmed,
             onPurgeCancelled = viewModel::onPurgeCancelled

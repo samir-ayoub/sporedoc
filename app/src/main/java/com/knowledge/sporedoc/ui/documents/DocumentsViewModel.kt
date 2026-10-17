@@ -211,13 +211,13 @@ class DocumentsViewModel(
 
     /** Enters selection mode with no row selected (the `[ SELECT ]` action). */
     fun onSelectModeEntered() {
-        setSelection(emptySet())
+        setSelection(emptyList())
     }
 
     /** No-op if already in selection mode; otherwise enters it with [id] already selected. */
     fun onRowLongPressed(id: DocumentId) {
         if (_uiState.value.selectionMode != null) return
-        setSelection(setOf(id))
+        setSelection(listOf(id))
     }
 
     /** No-op if not in selection mode; otherwise flips [id]'s membership in the selection. */
@@ -234,8 +234,8 @@ class DocumentsViewModel(
     /** No-op if not in selection mode; otherwise toggles between all-selected and none-selected. */
     fun onSelectAllToggled() {
         val current = _uiState.value.selectionMode ?: return
-        val allIds = loadedDocuments.map { it.id }.toSet()
-        val updated = if (current.selectedIds == allIds) emptySet() else allIds
+        val allIds = loadedDocuments.map { it.id }
+        val updated = if (current.selectedIds.toSet() == allIds.toSet()) emptyList() else allIds
         setSelection(updated)
     }
 
@@ -289,7 +289,28 @@ class DocumentsViewModel(
         }
     }
 
-    private fun setSelection(selectedIds: Set<DocumentId>) {
+    /**
+     * Tapping MERGE. No-op below 2 selected documents (R7). On success, exits selection mode
+     * and the list is refreshed. On failure, selection mode and its selection are left exactly
+     * as they were, and ShowMergeError is sent.
+     */
+    fun onMergeRequested() {
+        val selectedIds = _uiState.value.selectionMode?.selectedIds ?: return
+        if (selectedIds.size < 2) return
+        viewModelScope.launch {
+            when (documentRepository.mergeDocuments(selectedIds)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(selectionMode = null)
+                    refresh()
+                }
+                is Result.Failure -> {
+                    _effects.send(DocumentsEffect.ShowMergeError)
+                }
+            }
+        }
+    }
+
+    private fun setSelection(selectedIds: List<DocumentId>) {
         val selectedDocuments = loadedDocuments.filter { it.id in selectedIds }
         val summary = summarizeSelectedDocuments(selectedDocuments)
         _uiState.value = _uiState.value.copy(

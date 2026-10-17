@@ -3,6 +3,7 @@ package com.knowledge.sporedoc.data.repository
 import com.knowledge.sporedoc.data.file.DuplicateFileFinder
 import com.knowledge.sporedoc.data.file.FileDigest
 import com.knowledge.sporedoc.data.file.PdfFileAccess
+import com.knowledge.sporedoc.data.file.PdfMerger
 import com.knowledge.sporedoc.data.file.Sha256FileDigest
 import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
@@ -29,6 +30,7 @@ class FileDocumentRepository(
     private val documentsDir: File,
     private val pdfFileAccess: PdfFileAccess,
     private val clock: Clock,
+    private val pdfMerger: PdfMerger,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val fileDigest: FileDigest = Sha256FileDigest()
 ) : DocumentRepository {
@@ -98,6 +100,38 @@ class FileDocumentRepository(
             }
         }
     }
+
+    override suspend fun mergeDocuments(orderedIds: List<DocumentId>): Result<Document, DocumentError> =
+        withContext(ioDispatcher) {
+            val sourceFiles = mutableListOf<File>()
+            for (id in orderedIds) {
+                val file = findFile(id) ?: return@withContext Result.Failure(DocumentError.FileMissing(id))
+                sourceFiles.add(file)
+            }
+
+            val now = clock()
+            val provisionalFile = File(documentsDir, ".staging-merge-${System.nanoTime()}")
+
+            when (val mergeResult = pdfMerger.merge(sourceFiles, provisionalFile)) {
+                is Result.Failure -> {
+                    provisionalFile.delete()
+                    Result.Failure(mergeResult.error)
+                }
+                is Result.Success -> {
+                    val desiredName = generateName(now)
+                    val finalName = resolveAvailableName(desiredName)
+                    val targetFile = File(documentsDir, finalName)
+                    provisionalFile.renameTo(targetFile)
+                    targetFile.setLastModified(now.toEpochMilli())
+
+                    for (sourceFile in sourceFiles) {
+                        sourceFile.delete()
+                    }
+
+                    Result.Success(toDocument(targetFile))
+                }
+            }
+        }
 
     private fun libraryFiles(): List<File> =
         documentsDir.listFiles { file -> file.isFile && file.name.endsWith(".pdf") }?.toList() ?: emptyList()

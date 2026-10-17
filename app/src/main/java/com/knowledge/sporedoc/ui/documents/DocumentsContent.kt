@@ -64,6 +64,7 @@ fun DocumentsContent(
     onRowLongPressed: (DocumentId) -> Unit = {},
     onRowToggled: (DocumentId) -> Unit = {},
     onShareSelectedRequested: () -> Unit = {},
+    onMergeRequested: () -> Unit = {},
     onPurgeRequested: () -> Unit = {},
     onPurgeConfirmed: () -> Unit = {},
     onPurgeCancelled: () -> Unit = {},
@@ -108,6 +109,7 @@ fun DocumentsContent(
             DocumentsContextualBar(
                 summary = selectionMode.summary,
                 onShareRequested = onShareSelectedRequested,
+                onMergeRequested = onMergeRequested,
                 onPurgeRequested = onPurgeRequested,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )

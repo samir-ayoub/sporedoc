@@ -25,13 +25,13 @@ import com.knowledge.sporedoc.ui.theme.SporeDocTypography
 
 /**
  * Full-width bar that replaces the SD-15 tripartite footer while in selection mode (R10/R11):
- * a summary line of totals, then the `SHARE` / `MERGE` / `PURGE` actions. Tapping any action
- * is intentionally wired to a no-op (R12): this delivery has no behavior behind them.
+ * a summary line of totals, then the `SHARE` / `MERGE` / `PURGE` actions.
  */
 @Composable
 fun DocumentsContextualBar(
     summary: SelectionSummaryUi,
     onShareRequested: () -> Unit = {},
+    onMergeRequested: () -> Unit = {},
     onPurgeRequested: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -71,7 +71,7 @@ fun DocumentsContextualBar(
                 label = stringResource(R.string.contextual_merge_label),
                 description = stringResource(R.string.contextual_merge_content_description),
                 color = SporeDocColors.magma,
-                onClick = {}
+                onClick = onMergeRequested
             )
             ContextualAction(
                 label = stringResource(R.string.contextual_purge_label),

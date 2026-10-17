@@ -24,6 +24,7 @@
     <string name="more_options_share">Share</string>
     <string name="more_options_delete">Delete</string>
     <string name="delete_error_message">Couldn\'t delete the document. The list has been refreshed.</string>
+    <string name="merge_error_message">Couldn\'t merge the selected documents. Please try again.</string>
     <string name="rename_error_message">Couldn\'t rename the document. Please try again.</string>
     <string name="rename_dialog_title">Rename document</string>
     <string name="rename_dialog_confirm">RENAME</string>

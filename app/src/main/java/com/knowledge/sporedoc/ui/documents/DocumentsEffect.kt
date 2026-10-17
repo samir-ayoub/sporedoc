@@ -25,4 +25,7 @@ sealed interface DocumentsEffect {
 
     /** A document was added from an external source (system Intent); open it in the viewer. */
     data class OpenDocument(val id: DocumentId, val fileName: String) : DocumentsEffect
+
+    /** The merge failed (e.g. a selected document's file no longer exists on disk). */
+    data object ShowMergeError : DocumentsEffect
 }

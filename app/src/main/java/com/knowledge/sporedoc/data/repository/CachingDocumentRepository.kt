@@ -64,4 +64,11 @@ class CachingDocumentRepository(
                 thumbnailCache.remove(id)
             }
         }
+
+    override suspend fun mergeDocuments(orderedIds: List<DocumentId>): Result<Document, DocumentError> =
+        delegate.mergeDocuments(orderedIds).also { result ->
+            if (result is Result.Success) {
+                orderedIds.forEach { thumbnailCache.remove(it) }
+            }
+        }
 }

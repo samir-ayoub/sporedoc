@@ -1,6 +1,8 @@
 package com.knowledge.sporedoc.data.repository
 
 import com.knowledge.sporedoc.data.file.FakePdfFileAccess
+import com.knowledge.sporedoc.data.file.FakePdfMerger
+import com.knowledge.sporedoc.data.file.PdfMerger
 import com.knowledge.sporedoc.data.file.validPdfContent
 import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentError
@@ -27,11 +29,15 @@ class FileDocumentRepositoryTest {
 
     private val target = PixelSize(widthPx = 76, heightPx = 104)
 
-    private fun newRepository(clock: () -> Instant = { fixedNow }): FileDocumentRepository =
+    private fun newRepository(
+        clock: () -> Instant = { fixedNow },
+        pdfMerger: PdfMerger = FakePdfMerger()
+    ): FileDocumentRepository =
         FileDocumentRepository(
             documentsDir = tempFolder.root,
             pdfFileAccess = FakePdfFileAccess(),
-            clock = clock
+            clock = clock,
+            pdfMerger = pdfMerger
         )
 
     private fun writeRawFile(name: String, content: String, lastModifiedMillis: Long? = null): File {
@@ -425,5 +431,105 @@ class FileDocumentRepositoryTest {
         val error = repository.deleteDocument(added.id).asFailure()
 
         assertTrue(error is DocumentError.FileMissing)
+    }
+
+    // --- mergeDocuments (SD-19) ---
+
+    @Test
+    fun `mergeDocuments assembles the pages in selection order and deletes the originals`() = runTest {
+        val pdfMerger = FakePdfMerger()
+        val repository = newRepository(pdfMerger = pdfMerger)
+        val b = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "b.pdf").asSuccess()
+        val a = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "a.pdf").asSuccess()
+
+        val merged = repository.mergeDocuments(listOf(b.id, a.id)).asSuccess()
+
+        assertEquals(listOf("b.pdf", "a.pdf"), pdfMerger.mergeCalls.single().first.map { it.name })
+        assertEquals(3, merged.pageCount)
+        assertFalse(File(tempFolder.root, "b.pdf").exists())
+        assertFalse(File(tempFolder.root, "a.pdf").exists())
+        val remaining = repository.listDocuments().asSuccess()
+        assertEquals(listOf(merged.fileName), remaining.map { it.fileName })
+    }
+
+    @Test
+    fun `mergeDocuments merging three documents produces one new pdf and removes all three originals`() = runTest {
+        val pdfMerger = FakePdfMerger()
+        val repository = newRepository(pdfMerger = pdfMerger)
+        val first = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "first.pdf").asSuccess()
+        val second = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "second.pdf").asSuccess()
+        val third = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = "third.pdf").asSuccess()
+
+        repository.mergeDocuments(listOf(second.id, third.id, first.id)).asSuccess()
+
+        assertEquals(
+            listOf("second.pdf", "third.pdf", "first.pdf"),
+            pdfMerger.mergeCalls.single().first.map { it.name }
+        )
+        assertFalse(File(tempFolder.root, "first.pdf").exists())
+        assertFalse(File(tempFolder.root, "second.pdf").exists())
+        assertFalse(File(tempFolder.root, "third.pdf").exists())
+        val remaining = repository.listDocuments().asSuccess()
+        assertEquals(1, remaining.size)
+    }
+
+    @Test
+    fun `mergeDocuments without a name collision names the result by the Spore pattern`() = runTest {
+        val repository = newRepository()
+        val b = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "b.pdf").asSuccess()
+        val a = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "a.pdf").asSuccess()
+
+        val merged = repository.mergeDocuments(listOf(b.id, a.id)).asSuccess()
+
+        assertEquals("Spore_20261011_1430.pdf", merged.fileName)
+        assertTrue(File(tempFolder.root, "Spore_20261011_1430.pdf").exists())
+    }
+
+    @Test
+    fun `mergeDocuments applies the existing collision suffix rule when the generated name is taken`() = runTest {
+        val repository = newRepository()
+        writeRawFile("Spore_20261011_1430.pdf", validPdfContent(9))
+        val b = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "b.pdf").asSuccess()
+        val a = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "a.pdf").asSuccess()
+
+        val merged = repository.mergeDocuments(listOf(b.id, a.id)).asSuccess()
+
+        assertEquals("Spore_20261011_1430_2.pdf", merged.fileName)
+        assertTrue(File(tempFolder.root, "Spore_20261011_1430.pdf").exists())
+    }
+
+    @Test
+    fun `mergeDocuments fails without creating or deleting anything when a source file is missing on disk`() = runTest {
+        val pdfMerger = FakePdfMerger()
+        val repository = newRepository(pdfMerger = pdfMerger)
+        val b = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "b.pdf").asSuccess()
+        val a = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "a.pdf").asSuccess()
+        File(tempFolder.root, "a.pdf").delete()
+        val filesBefore = tempFolder.root.listFiles()!!.map { it.name }.toSet()
+
+        val error = repository.mergeDocuments(listOf(b.id, a.id)).asFailure()
+
+        assertTrue(error is DocumentError.FileMissing)
+        assertTrue(pdfMerger.mergeCalls.isEmpty())
+        assertTrue(File(tempFolder.root, "b.pdf").exists())
+        assertEquals(filesBefore, tempFolder.root.listFiles()!!.map { it.name }.toSet())
+    }
+
+    @Test
+    fun `mergeDocuments fails without creating or deleting anything when the merger itself fails`() = runTest {
+        val pdfMerger = FakePdfMerger().apply {
+            result = Result.Failure(DocumentError.UnreadableFile(com.knowledge.sporedoc.domain.model.DocumentId("b.pdf")))
+        }
+        val repository = newRepository(pdfMerger = pdfMerger)
+        val b = repository.addDocument(FakeDocumentSource(validPdfContent(2)), requestedName = "b.pdf").asSuccess()
+        val a = repository.addDocument(FakeDocumentSource(validPdfContent(1)), requestedName = "a.pdf").asSuccess()
+        val filesBefore = tempFolder.root.listFiles()!!.map { it.name }.toSet()
+
+        val error = repository.mergeDocuments(listOf(b.id, a.id)).asFailure()
+
+        assertTrue(error is DocumentError.UnreadableFile)
+        assertTrue(File(tempFolder.root, "b.pdf").exists())
+        assertTrue(File(tempFolder.root, "a.pdf").exists())
+        assertEquals(filesBefore, tempFolder.root.listFiles()!!.map { it.name }.toSet())
     }
 }

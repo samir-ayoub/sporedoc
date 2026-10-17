@@ -771,7 +771,7 @@ class DocumentsViewModelTest {
         viewModel.onSelectModeEntered()
 
         val selectionMode = viewModel.uiState.value.selectionMode
-        assertEquals(emptySet<DocumentId>(), selectionMode?.selectedIds)
+        assertEquals(emptyList<DocumentId>(), selectionMode?.selectedIds)
         assertEquals("0", selectionMode?.counterText)
         assertEquals(0, selectionMode?.summary?.documentCount)
     }
@@ -785,7 +785,7 @@ class DocumentsViewModelTest {
         viewModel.onRowLongPressed(doc.id)
 
         val selectionMode = viewModel.uiState.value.selectionMode
-        assertEquals(setOf(doc.id), selectionMode?.selectedIds)
+        assertEquals(listOf(doc.id), selectionMode?.selectedIds)
         assertEquals("01", selectionMode?.counterText)
     }
 
@@ -799,7 +799,7 @@ class DocumentsViewModelTest {
 
         viewModel.onRowLongPressed(b.id)
 
-        assertEquals(setOf(a.id), viewModel.uiState.value.selectionMode?.selectedIds)
+        assertEquals(listOf(a.id), viewModel.uiState.value.selectionMode?.selectedIds)
     }
 
     @Test
@@ -821,11 +821,11 @@ class DocumentsViewModelTest {
         viewModel.onSelectModeEntered()
 
         viewModel.onRowToggled(doc.id)
-        assertEquals(setOf(doc.id), viewModel.uiState.value.selectionMode?.selectedIds)
+        assertEquals(listOf(doc.id), viewModel.uiState.value.selectionMode?.selectedIds)
         assertEquals("01", viewModel.uiState.value.selectionMode?.counterText)
 
         viewModel.onRowToggled(doc.id)
-        assertEquals(emptySet<DocumentId>(), viewModel.uiState.value.selectionMode?.selectedIds)
+        assertEquals(emptyList<DocumentId>(), viewModel.uiState.value.selectionMode?.selectedIds)
         assertEquals("0", viewModel.uiState.value.selectionMode?.counterText)
     }
 
@@ -847,7 +847,7 @@ class DocumentsViewModelTest {
         viewModel.onRowToggled(c.id)
 
         val selectionMode = viewModel.uiState.value.selectionMode
-        assertEquals(emptySet<DocumentId>(), selectionMode?.selectedIds)
+        assertEquals(emptyList<DocumentId>(), selectionMode?.selectedIds)
         assertEquals("0", selectionMode?.counterText)
         assertTrue(selectionMode != null)
     }
@@ -873,7 +873,8 @@ class DocumentsViewModelTest {
         viewModel.onSelectAllToggled()
 
         val selectionMode = viewModel.uiState.value.selectionMode
-        assertEquals(documents.map { it.id }.toSet(), selectionMode?.selectedIds)
+        assertEquals(documents.map { it.id }.toSet(), selectionMode?.selectedIds?.toSet())
+        assertEquals(documents.size, selectionMode?.selectedIds?.distinct()?.size)
         assertEquals("11", selectionMode?.counterText)
     }
 
@@ -889,7 +890,7 @@ class DocumentsViewModelTest {
 
         val selectionMode = viewModel.uiState.value.selectionMode
         assertTrue(selectionMode != null)
-        assertEquals(emptySet<DocumentId>(), selectionMode?.selectedIds)
+        assertEquals(emptyList<DocumentId>(), selectionMode?.selectedIds)
         assertEquals("0", selectionMode?.counterText)
     }
 
@@ -985,7 +986,7 @@ class DocumentsViewModelTest {
         runCurrent()
 
         assertTrue(effects.isEmpty())
-        assertEquals(emptySet<DocumentId>(), viewModel.uiState.value.selectionMode?.selectedIds)
+        assertEquals(emptyList<DocumentId>(), viewModel.uiState.value.selectionMode?.selectedIds)
         job.cancel()
     }
 
@@ -1059,7 +1060,7 @@ class DocumentsViewModelTest {
 
         assertTrue(!viewModel.uiState.value.isPurgeConfirmationVisible)
         assertTrue(repository.deleteDocumentCalls.isEmpty())
-        assertEquals(setOf(a.id, b.id), viewModel.uiState.value.selectionMode?.selectedIds)
+        assertEquals(setOf(a.id, b.id), viewModel.uiState.value.selectionMode?.selectedIds?.toSet())
         assertEquals(
             listOf("a.pdf", "b.pdf").sorted(),
             viewModel.uiState.value.sections.single().rows.map { it.fileName }.sorted()
@@ -1126,5 +1127,176 @@ class DocumentsViewModelTest {
 
         assertTrue(repository.deleteDocumentCalls.isEmpty())
         assertEquals(listOf("contrato.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+    }
+
+    // --- selection order (SD-19 R1/AC9) ---
+
+    @Test
+    fun `selecting c then a preserves tap order regardless of each row's position in the list`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val c = document("c.pdf", fixedNow.minusSeconds(60))
+        val repository = FakeDocumentRepository(listOf(a, c))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+
+        viewModel.onRowToggled(c.id)
+        viewModel.onRowToggled(a.id)
+
+        assertEquals(listOf(c.id, a.id), viewModel.uiState.value.selectionMode?.selectedIds)
+    }
+
+    @Test
+    fun `deselecting a row and reselecting it re-appends it at the end instead of its old position`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val c = document("c.pdf", fixedNow.minusSeconds(120))
+        val repository = FakeDocumentRepository(listOf(a, b, c))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onRowToggled(a.id)
+        viewModel.onRowToggled(b.id)
+        viewModel.onRowToggled(c.id)
+
+        viewModel.onRowToggled(b.id) // deselect
+        viewModel.onRowToggled(b.id) // reselect
+
+        assertEquals(listOf(a.id, c.id, b.id), viewModel.uiState.value.selectionMode?.selectedIds)
+    }
+
+    @Test
+    fun `selectedIds never contains a duplicate id`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(a))
+        val viewModel = newViewModel(repository)
+        viewModel.onRowLongPressed(a.id)
+
+        val selectedIds = viewModel.uiState.value.selectionMode?.selectedIds
+        assertEquals(selectedIds?.distinct(), selectedIds)
+    }
+
+    // --- onMergeRequested (SD-19 R6-R9) ---
+
+    @Test
+    fun `onMergeRequested with 2 selected documents merges them in selection order and exits selection mode`() = runTest {
+        val b = document("b.pdf", fixedNow, pageCount = 2)
+        val a = document("a.pdf", fixedNow.minusSeconds(60), pageCount = 1)
+        val repository = FakeDocumentRepository(listOf(b, a))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onRowToggled(b.id)
+        viewModel.onRowToggled(a.id)
+
+        viewModel.onMergeRequested()
+        runCurrent()
+
+        assertEquals(listOf(listOf(b.id, a.id)), repository.mergeDocumentsCalls)
+        assertNull(viewModel.uiState.value.selectionMode)
+    }
+
+    @Test
+    fun `onMergeRequested with 3 selected documents merges all three in selection order`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val c = document("c.pdf", fixedNow.minusSeconds(120))
+        val repository = FakeDocumentRepository(listOf(a, b, c))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onRowToggled(c.id)
+        viewModel.onRowToggled(a.id)
+        viewModel.onRowToggled(b.id)
+
+        viewModel.onMergeRequested()
+        runCurrent()
+
+        assertEquals(listOf(listOf(c.id, a.id, b.id)), repository.mergeDocumentsCalls)
+    }
+
+    @Test
+    fun `onMergeRequested after success shows the merged pdf in TODAY and the originals are gone`() = runTest {
+        val b = document("b.pdf", fixedNow)
+        val a = document("a.pdf", fixedNow.minusSeconds(60))
+        val repository = FakeDocumentRepository(listOf(b, a))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onRowToggled(b.id)
+        viewModel.onRowToggled(a.id)
+
+        viewModel.onMergeRequested()
+        runCurrent()
+
+        val todaySection = viewModel.uiState.value.sections.single { it.label == SectionLabel.TODAY }
+        assertEquals(listOf("Spore_20261011_1430.pdf"), todaySection.rows.map { it.fileName })
+        assertTrue(viewModel.uiState.value.sections.none { section ->
+            section.rows.any { it.fileName == "a.pdf" || it.fileName == "b.pdf" }
+        })
+    }
+
+    @Test
+    fun `onMergeRequested with 1 selected document is a no-op`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onRowToggled(doc.id)
+
+        viewModel.onMergeRequested()
+        runCurrent()
+
+        assertTrue(repository.mergeDocumentsCalls.isEmpty())
+        assertEquals(listOf(doc.id), viewModel.uiState.value.selectionMode?.selectedIds)
+    }
+
+    @Test
+    fun `onMergeRequested with 0 selected documents is a no-op`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+
+        viewModel.onMergeRequested()
+        runCurrent()
+
+        assertTrue(repository.mergeDocumentsCalls.isEmpty())
+        assertEquals(emptyList<DocumentId>(), viewModel.uiState.value.selectionMode?.selectedIds)
+    }
+
+    @Test
+    fun `onMergeRequested outside selection mode is a no-op`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+
+        viewModel.onMergeRequested()
+        runCurrent()
+
+        assertTrue(repository.mergeDocumentsCalls.isEmpty())
+        assertNull(viewModel.uiState.value.selectionMode)
+    }
+
+    @Test
+    fun `onMergeRequested on failure shows ShowMergeError and leaves selection mode and the selection untouched`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val repository = FakeDocumentRepository(listOf(a, b)).apply {
+            mergeDocumentsResult = Result.Failure(DocumentError.FileMissing(a.id))
+        }
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onRowToggled(a.id)
+        viewModel.onRowToggled(b.id)
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onMergeRequested()
+        runCurrent()
+
+        assertEquals(listOf(DocumentsEffect.ShowMergeError), effects)
+        assertEquals(listOf(a.id, b.id), viewModel.uiState.value.selectionMode?.selectedIds)
+        assertEquals(
+            listOf("a.pdf", "b.pdf").sorted(),
+            viewModel.uiState.value.sections.single().rows.map { it.fileName }.sorted()
+        )
+        job.cancel()
     }
 }
