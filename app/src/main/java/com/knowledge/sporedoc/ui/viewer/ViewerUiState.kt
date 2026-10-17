@@ -1,9 +1,12 @@
 package com.knowledge.sporedoc.ui.viewer
 
-/** The ViewerScreen's whole visible state: file name, page position, dialog visibility. */
+/** The ViewerScreen's whole visible state: file name, page position, dialog visibility, rotate mode. */
 data class ViewerUiState(
     val fileName: String = "",
     val pageCount: Int = 0,
     val currentPage: Int = 1,
-    val isDeleteDialogVisible: Boolean = false
+    val isDeleteDialogVisible: Boolean = false,
+    val isRotateModeActive: Boolean = false,
+    val pageRotationDegrees: Map<Int, Int> = emptyMap(),
+    val contentRevision: Int = 0
 )

@@ -4,6 +4,7 @@ import com.knowledge.sporedoc.data.file.DuplicateFileFinder
 import com.knowledge.sporedoc.data.file.FileDigest
 import com.knowledge.sporedoc.data.file.PdfFileAccess
 import com.knowledge.sporedoc.data.file.PdfMerger
+import com.knowledge.sporedoc.data.file.PdfPageRotator
 import com.knowledge.sporedoc.data.file.Sha256FileDigest
 import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
@@ -31,6 +32,7 @@ class FileDocumentRepository(
     private val pdfFileAccess: PdfFileAccess,
     private val clock: Clock,
     private val pdfMerger: PdfMerger,
+    private val pdfPageRotator: PdfPageRotator,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val fileDigest: FileDigest = Sha256FileDigest()
 ) : DocumentRepository {
@@ -132,6 +134,28 @@ class FileDocumentRepository(
                 }
             }
         }
+
+    override suspend fun rotatePages(
+        id: DocumentId,
+        rotationsByPageIndex: Map<Int, Int>
+    ): Result<Unit, DocumentError> = withContext(ioDispatcher) {
+        val file = findFile(id) ?: return@withContext Result.Failure(DocumentError.FileMissing(id))
+        val provisionalFile = File(documentsDir, ".staging-rotate-${System.nanoTime()}")
+
+        when (val rotateResult = pdfPageRotator.rotatePages(file, provisionalFile, rotationsByPageIndex)) {
+            is Result.Failure -> {
+                provisionalFile.delete()
+                Result.Failure(rotateResult.error)
+            }
+            is Result.Success -> {
+                val lastModified = file.lastModified()
+                file.delete()
+                provisionalFile.renameTo(file)
+                file.setLastModified(lastModified)
+                Result.Success(Unit)
+            }
+        }
+    }
 
     private fun libraryFiles(): List<File> =
         documentsDir.listFiles { file -> file.isFile && file.name.endsWith(".pdf") }?.toList() ?: emptyList()

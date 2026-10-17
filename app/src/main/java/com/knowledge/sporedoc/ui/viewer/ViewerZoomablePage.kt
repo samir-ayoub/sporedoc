@@ -48,6 +48,8 @@ fun ViewerZoomablePage(
     pageIndex: Int,
     loadPage: suspend (Int, PixelSize) -> PageImage?,
     onRestChanged: (Boolean) -> Unit,
+    rotationDegrees: Int = 0,
+    contentRevision: Int = 0,
     modifier: Modifier = Modifier
 ) {
     val zoomState = remember(pageIndex) { PageZoomState() }
@@ -59,7 +61,7 @@ fun ViewerZoomablePage(
             heightDp = heightDp
         )
     }
-    val pageImage by produceState<PageImage?>(initialValue = null, key1 = pageIndex) {
+    val pageImage by produceState<PageImage?>(initialValue = null, key1 = pageIndex, key2 = contentRevision) {
         value = loadPage(pageIndex, targetSize)
     }
     val bitmap = remember(pageImage) { pageImage?.toImageBitmapOrNull() }
@@ -138,6 +140,7 @@ fun ViewerZoomablePage(
             modifier = Modifier
                 .width(SporeDocSpacing.viewerPageWidthDp)
                 .aspectRatio(SporeDocSpacing.viewerPageAspectRatio)
+                .graphicsLayer { rotationZ = -rotationDegrees.toFloat() }
                 .pageShadow()
                 .background(SporeDocColors.paper)
         ) {
@@ -164,6 +167,7 @@ fun ViewerZoomablePage(
                             scaleY = scale
                             translationX = offsetX
                             translationY = offsetY
+                            rotationZ = -rotationDegrees.toFloat()
                         },
                     contentScale = ContentScale.Fit
                 )

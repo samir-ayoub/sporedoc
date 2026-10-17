@@ -57,6 +57,15 @@
     <string name="viewer_footer_share_label">SHARE</string>
     <string name="viewer_footer_share_content_description">Share document</string>
     <string name="delete_box_content_description">Delete file</string>
+    <string name="viewer_footer_rotate_content_description">Rotate page</string>
+
+    <!-- ViewerScreen rotate mode (SD-22) -->
+    <string name="rotate_left_label">ROTATE LEFT</string>
+    <string name="rotate_left_content_description">Rotate left</string>
+    <string name="rotate_save_label">SAVE</string>
+    <string name="rotate_save_content_description">Save rotation</string>
+    <string name="rotate_cancel_content_description">Cancel rotation</string>
+    <string name="rotate_save_error_message">Couldn\'t save the rotated page. Please try again.</string>
 
     <!-- Shared dialogs -->
     <string name="delete_dialog_title">Delete document?</string>

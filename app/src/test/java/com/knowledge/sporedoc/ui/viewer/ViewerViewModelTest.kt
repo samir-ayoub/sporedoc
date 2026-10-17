@@ -249,4 +249,126 @@ class ViewerViewModelTest {
         assertEquals(false, viewModel.uiState.value.isDeleteDialogVisible)
         assertTrue(repository.deleteDocumentCalls.isEmpty())
     }
+
+    // --- rotate flow (SD-22) ---
+
+    @Test
+    fun `onRotateRequested enters rotate mode with no pending rotations`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+
+        viewModel.onRotateRequested()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isRotateModeActive)
+        assertEquals(emptyMap<Int, Int>(), state.pageRotationDegrees)
+    }
+
+    @Test
+    fun `one ROTATE LEFT tap accumulates 90 degrees for the current page index`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onRotateRequested()
+
+        viewModel.onRotateLeftClicked()
+
+        assertEquals(90, viewModel.uiState.value.pageRotationDegrees[0])
+    }
+
+    @Test
+    fun `four consecutive ROTATE LEFT taps on the same page return its accumulated rotation to absent or zero`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onRotateRequested()
+
+        repeat(4) { viewModel.onRotateLeftClicked() }
+
+        val pending = viewModel.uiState.value.pageRotationDegrees[0] ?: 0
+        assertEquals(0, pending)
+    }
+
+    @Test
+    fun `rotating one page, visiting another page and rotating it does not affect the first page's accumulated rotation`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onRotateRequested()
+
+        viewModel.onRotateLeftClicked() // page index 0 -> 90
+        viewModel.onPageChanged(1) // swipe to page index 1
+        viewModel.onRotateLeftClicked() // page index 1 -> 90
+        viewModel.onPageChanged(0) // swipe back to page index 0
+
+        val state = viewModel.uiState.value
+        assertEquals(90, state.pageRotationDegrees[0])
+        assertEquals(90, state.pageRotationDegrees[1])
+    }
+
+    @Test
+    fun `onRotateSaveClicked with pending rotations calls rotatePages with only the non-zero entries, then exits rotate mode`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onRotateRequested()
+        viewModel.onRotateLeftClicked() // page index 0 -> 90
+
+        viewModel.onRotateSaveClicked()
+        runCurrent()
+
+        assertEquals(listOf(documentId to mapOf(0 to 90)), repository.rotatePagesCalls)
+        val state = viewModel.uiState.value
+        assertEquals(emptyMap<Int, Int>(), state.pageRotationDegrees)
+        assertEquals(false, state.isRotateModeActive)
+        assertEquals(1, state.contentRevision)
+    }
+
+    @Test
+    fun `onRotateSaveClicked on failure emits RotateSaveFailed and keeps rotate mode and pending rotations`() = runTest {
+        val repository = repositoryWithPageCount(6).apply {
+            rotatePagesResult = Result.Failure(DocumentError.FileMissing(documentId))
+        }
+        val viewModel = newViewModel(repository)
+        viewModel.onRotateRequested()
+        viewModel.onRotateLeftClicked()
+        val effects = mutableListOf<ViewerEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onRotateSaveClicked()
+        runCurrent()
+
+        assertEquals(listOf(ViewerEffect.RotateSaveFailed), effects)
+        val state = viewModel.uiState.value
+        assertTrue(state.isRotateModeActive)
+        assertEquals(90, state.pageRotationDegrees[0])
+        assertEquals(0, state.contentRevision)
+        job.cancel()
+    }
+
+    @Test
+    fun `onRotateSaveClicked with nothing rotated exits rotate mode without calling the repository`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onRotateRequested()
+
+        viewModel.onRotateSaveClicked()
+        runCurrent()
+
+        assertTrue(repository.rotatePagesCalls.isEmpty())
+        assertEquals(false, viewModel.uiState.value.isRotateModeActive)
+    }
+
+    @Test
+    fun `onRotateCancelClicked discards pending rotations, exits rotate mode and calls no repository method`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onRotateRequested()
+        viewModel.onRotateLeftClicked()
+
+        viewModel.onRotateCancelClicked()
+
+        val state = viewModel.uiState.value
+        assertEquals(emptyMap<Int, Int>(), state.pageRotationDegrees)
+        assertEquals(false, state.isRotateModeActive)
+        assertEquals(0, state.contentRevision)
+        assertTrue(repository.rotatePagesCalls.isEmpty())
+    }
 }

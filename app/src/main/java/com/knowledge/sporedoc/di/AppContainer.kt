@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.core.content.FileProvider
 import com.knowledge.sporedoc.data.file.AndroidPdfFileAccess
 import com.knowledge.sporedoc.data.file.AndroidPdfMerger
+import com.knowledge.sporedoc.data.file.AndroidPdfPageRotator
 import com.knowledge.sporedoc.data.file.Sha256FileDigest
 import com.knowledge.sporedoc.data.file.UriDocumentSource
 import com.knowledge.sporedoc.data.file.displayNameFor
@@ -38,6 +39,7 @@ class AppContainer(context: Context) {
             pdfFileAccess = AndroidPdfFileAccess(),
             clock = clock,
             pdfMerger = AndroidPdfMerger(),
+            pdfPageRotator = AndroidPdfPageRotator(),
             fileDigest = Sha256FileDigest()
         )
     )

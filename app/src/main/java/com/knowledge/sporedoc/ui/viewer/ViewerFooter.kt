@@ -42,6 +42,7 @@ import com.knowledge.sporedoc.ui.theme.SporeDocTypography
 fun ViewerFooter(
     onShareClicked: () -> Unit,
     onDeleteClicked: () -> Unit,
+    onRotateClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -67,7 +68,11 @@ fun ViewerFooter(
             horizontalArrangement = Arrangement.spacedBy(SporeDocSpacing.viewerFooterBoxGapDp)
         ) {
             IconOnlyBox(modifier = Modifier.weight(1f)) { CropIcon() }
-            IconOnlyBox(modifier = Modifier.weight(1f)) { RotateIcon() }
+            EnabledIconOnlyBox(
+                modifier = Modifier.weight(1f),
+                onClick = onRotateClicked,
+                contentDescription = stringResource(R.string.viewer_footer_rotate_content_description)
+            ) { RotateIcon() }
             IconOnlyBox(modifier = Modifier.weight(1f)) { SignIcon() }
             EnabledIconOnlyBox(
                 modifier = Modifier.weight(1f),

@@ -35,6 +35,8 @@ class CachingDocumentRepositoryTest {
         var renameResult: ((DocumentId, String) -> Result<Document, DocumentError>)? = null
         val mergeDocumentsCalls = mutableListOf<List<DocumentId>>()
         var mergeDocumentsResult: Result<Document, DocumentError> = Result.Failure(DocumentError.InvalidName)
+        val rotatePagesCalls = mutableListOf<Pair<DocumentId, Map<Int, Int>>>()
+        var rotatePagesResult: Result<Unit, DocumentError> = Result.Failure(DocumentError.InvalidName)
 
         override suspend fun listDocuments(): Result<List<Document>, DocumentError> = Result.Success(emptyList())
 
@@ -65,6 +67,11 @@ class CachingDocumentRepositoryTest {
         override suspend fun mergeDocuments(orderedIds: List<DocumentId>): Result<Document, DocumentError> {
             mergeDocumentsCalls.add(orderedIds)
             return mergeDocumentsResult
+        }
+
+        override suspend fun rotatePages(id: DocumentId, rotationsByPageIndex: Map<Int, Int>): Result<Unit, DocumentError> {
+            rotatePagesCalls.add(id to rotationsByPageIndex)
+            return rotatePagesResult
         }
     }
 
@@ -279,6 +286,58 @@ class CachingDocumentRepositoryTest {
 
         cache.mergeDocuments(listOf(idA, DocumentId("b.pdf")))
         val result = cache.getThumbnail(idA, target)
+
+        assertEquals(Result.Success(image(1)), result)
+        assertTrue(delegate.getThumbnailCalls.isEmpty())
+    }
+
+    // --- rotatePages (SD-22) ---
+
+    @Test
+    fun `rotatePages delegates with the given id and rotations map and returns the delegate's result`() = runTest {
+        val id = DocumentId("a.pdf")
+        val delegate = RecordingDocumentRepository().apply {
+            rotatePagesResult = Result.Success(Unit)
+        }
+        val cache = CachingDocumentRepository(delegate)
+
+        val result = cache.rotatePages(id, mapOf(0 to 90))
+
+        assertEquals(listOf(id to mapOf(0 to 90)), delegate.rotatePagesCalls)
+        assertEquals(Result.Success(Unit), result)
+    }
+
+    @Test
+    fun `a successful rotatePages evicts the cached thumbnail for that document`() = runTest {
+        val id = DocumentId("a.pdf")
+        val delegate = RecordingDocumentRepository().apply {
+            thumbnails = mapOf(id to Result.Success(image(1)))
+            rotatePagesResult = Result.Success(Unit)
+        }
+        val cache = CachingDocumentRepository(delegate)
+        cache.getThumbnail(id, target)
+
+        cache.rotatePages(id, mapOf(0 to 90))
+        delegate.thumbnails = mapOf(id to Result.Success(image(2))) // rotated pixels now on disk
+
+        val afterRotate = cache.getThumbnail(id, target)
+
+        assertEquals(Result.Success(image(2)), afterRotate)
+    }
+
+    @Test
+    fun `a failed rotatePages does not evict the cached thumbnail`() = runTest {
+        val id = DocumentId("a.pdf")
+        val delegate = RecordingDocumentRepository().apply {
+            thumbnails = mapOf(id to Result.Success(image(1)))
+            rotatePagesResult = Result.Failure(DocumentError.UnreadableFile(id))
+        }
+        val cache = CachingDocumentRepository(delegate)
+        cache.getThumbnail(id, target)
+        delegate.getThumbnailCalls.clear()
+
+        cache.rotatePages(id, mapOf(0 to 90))
+        val result = cache.getThumbnail(id, target)
 
         assertEquals(Result.Success(image(1)), result)
         assertTrue(delegate.getThumbnailCalls.isEmpty())

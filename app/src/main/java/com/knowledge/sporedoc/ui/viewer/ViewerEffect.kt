@@ -12,4 +12,7 @@ sealed interface ViewerEffect {
 
     /** The document could not be opened (missing or unreadable); return to the list with an error. */
     data object LoadFailed : ViewerEffect
+
+    /** SAVE failed while persisting an accumulated rotation; rotate mode and the pending map stay as they were. */
+    data object RotateSaveFailed : ViewerEffect
 }

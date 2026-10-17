@@ -7,6 +7,7 @@ import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PageImage
 import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentRepository
+import com.knowledge.sporedoc.domain.usecase.AccumulateRotation
 import com.knowledge.sporedoc.domain.util.Result
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -33,6 +34,8 @@ class ViewerViewModel(
 
     private val _effects = Channel<ViewerEffect>(Channel.BUFFERED)
     val effects: Flow<ViewerEffect> = _effects.receiveAsFlow()
+
+    private val accumulateRotation = AccumulateRotation()
 
     init {
         viewModelScope.launch {
@@ -82,5 +85,49 @@ class ViewerViewModel(
 
     fun onDeleteCancelled() {
         _uiState.value = _uiState.value.copy(isDeleteDialogVisible = false)
+    }
+
+    /** Enters the dedicated rotate-mode state (ROTATE LEFT/SAVE/CANCEL), no rotation pending yet. */
+    fun onRotateRequested() {
+        _uiState.value = _uiState.value.copy(isRotateModeActive = true, pageRotationDegrees = emptyMap())
+    }
+
+    /** Rotates the currently visible page only, accumulating 90° counterclockwise per tap. */
+    fun onRotateLeftClicked() {
+        val pageIndex = _uiState.value.currentPage - 1
+        val current = _uiState.value.pageRotationDegrees[pageIndex] ?: 0
+        val next = accumulateRotation(current)
+        val updated = _uiState.value.pageRotationDegrees.toMutableMap()
+        if (next == 0) updated.remove(pageIndex) else updated[pageIndex] = next
+        _uiState.value = _uiState.value.copy(pageRotationDegrees = updated)
+    }
+
+    /** Persists every non-zero pending rotation, then exits rotate mode; a no-op write if none are pending. */
+    fun onRotateSaveClicked() {
+        val pending = _uiState.value.pageRotationDegrees.filterValues { it != 0 }
+        if (pending.isEmpty()) {
+            _uiState.value = _uiState.value.copy(isRotateModeActive = false, pageRotationDegrees = emptyMap())
+            return
+        }
+
+        viewModelScope.launch {
+            when (documentRepository.rotatePages(documentId, pending)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        isRotateModeActive = false,
+                        pageRotationDegrees = emptyMap(),
+                        contentRevision = _uiState.value.contentRevision + 1
+                    )
+                }
+                is Result.Failure -> {
+                    _effects.send(ViewerEffect.RotateSaveFailed)
+                }
+            }
+        }
+    }
+
+    /** Discards any accumulated rotation and exits rotate mode without touching the repository. */
+    fun onRotateCancelClicked() {
+        _uiState.value = _uiState.value.copy(isRotateModeActive = false, pageRotationDegrees = emptyMap())
     }
 }

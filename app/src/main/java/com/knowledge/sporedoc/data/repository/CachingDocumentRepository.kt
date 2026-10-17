@@ -71,4 +71,11 @@ class CachingDocumentRepository(
                 orderedIds.forEach { thumbnailCache.remove(it) }
             }
         }
+
+    override suspend fun rotatePages(id: DocumentId, rotationsByPageIndex: Map<Int, Int>): Result<Unit, DocumentError> =
+        delegate.rotatePages(id, rotationsByPageIndex).also { result ->
+            if (result is Result.Success) {
+                thumbnailCache.remove(id)
+            }
+        }
 }
