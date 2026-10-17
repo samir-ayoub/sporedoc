@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.knowledge.sporedoc.domain.model.PageImage
 import com.knowledge.sporedoc.domain.model.PixelSize
-import com.knowledge.sporedoc.ui.components.DeleteConfirmationDialog
 import com.knowledge.sporedoc.ui.theme.effects.BackgroundScreen
 import com.knowledge.sporedoc.ui.theme.effects.Grain
 import com.knowledge.sporedoc.ui.theme.effects.ScreenBackground
@@ -22,10 +21,6 @@ fun ViewerContent(
     state: ViewerUiState,
     loadPage: suspend (Int, PixelSize) -> PageImage?,
     onBack: () -> Unit,
-    onDeleteRequested: () -> Unit,
-    onDeleteConfirmed: () -> Unit,
-    onDeleteCancelled: () -> Unit,
-    onExport: () -> Unit,
     onPageChanged: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -34,8 +29,7 @@ fun ViewerContent(
         Column(modifier = Modifier.fillMaxSize()) {
             ViewerAppBar(
                 fileName = state.fileName,
-                onBack = onBack,
-                onDeleteRequested = onDeleteRequested
+                onBack = onBack
             )
             ViewerPageStage(
                 pageCount = state.pageCount,
@@ -46,13 +40,9 @@ fun ViewerContent(
                     .fillMaxSize()
                     .weight(1f)
             )
-            ViewerFooter(onExport = onExport)
+            ViewerFooter()
         }
         Vignette()
         Grain()
-    }
-
-    if (state.isDeleteDialogVisible) {
-        DeleteConfirmationDialog(onConfirm = onDeleteConfirmed, onDismiss = onDeleteCancelled)
     }
 }

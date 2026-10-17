@@ -104,6 +104,15 @@ object SporeDocTypography {
         color = SporeDocColors.ivoryMeta,
     )
 
+    // SD-20: SHARE label in the viewer's five-box footer (no handover-JSON entry).
+    val viewerFooterShareLabel = TextStyle(
+        fontFamily = SporeDocFonts.mono,
+        fontWeight = FontWeight(400),
+        fontSize = 12.sp,
+        letterSpacing = 4.sp,
+        color = SporeDocColors.ivory,
+    )
+
     // SD-8: splash baseline line ("KNOWLEDGE APPLICATIONS").
     val splashBaseline = TextStyle(
         fontFamily = SporeDocFonts.mono,
