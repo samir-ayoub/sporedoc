@@ -3,6 +3,7 @@ package com.knowledge.sporedoc.ui.viewer
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -20,7 +21,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import com.knowledge.sporedoc.R
 import com.knowledge.sporedoc.ui.theme.SporeDocColors
@@ -29,12 +33,17 @@ import com.knowledge.sporedoc.ui.theme.SporeDocStroke
 import com.knowledge.sporedoc.ui.theme.SporeDocTypography
 
 /**
- * The footer (SD-20 R2-R9): a fixed, non-scrolling row of five inert boxes, in order
- * `crop, rotate, sign, delete, share`. None of them has any action wired up yet (R6); all
- * five carry disabled semantics so no screen reader announces them as tappable (R7).
+ * The footer (SD-20 R2-R9, reconnected by SD-21 R1-R8): a fixed, non-scrolling row of five
+ * boxes, in order `crop, rotate, sign, delete, share`. `crop`, `rotate` and `sign` remain
+ * inert with disabled semantics (R8); `delete` and `share` are wired to [onDeleteClicked] and
+ * [onShareClicked] respectively, with button-role content descriptions (R2, R3, R6, R7).
  */
 @Composable
-fun ViewerFooter(modifier: Modifier = Modifier) {
+fun ViewerFooter(
+    onShareClicked: () -> Unit,
+    onDeleteClicked: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -60,8 +69,12 @@ fun ViewerFooter(modifier: Modifier = Modifier) {
             IconOnlyBox(modifier = Modifier.weight(1f)) { CropIcon() }
             IconOnlyBox(modifier = Modifier.weight(1f)) { RotateIcon() }
             IconOnlyBox(modifier = Modifier.weight(1f)) { SignIcon() }
-            IconOnlyBox(modifier = Modifier.weight(1f)) { DeleteIcon() }
-            ShareBox(modifier = Modifier.weight(2f))
+            EnabledIconOnlyBox(
+                modifier = Modifier.weight(1f),
+                onClick = onDeleteClicked,
+                contentDescription = stringResource(R.string.delete_box_content_description)
+            ) { DeleteIcon() }
+            ShareBox(modifier = Modifier.weight(2f), onClick = onShareClicked)
         }
     }
 }
@@ -82,18 +95,51 @@ private fun IconOnlyBox(modifier: Modifier = Modifier, icon: @Composable () -> U
 }
 
 /**
- * Disabled box for `share`: icon plus the `SHARE` label, heavier visual weight than the
- * other four boxes and pinned to the footer's trailing edge (R4, R6, R7).
+ * Enabled box shared by `delete` (SD-21 R2, R7): icon only, clickable, with a button-role
+ * content description so a screen reader announces it as tappable.
  */
 @Composable
-private fun ShareBox(modifier: Modifier = Modifier) {
+private fun EnabledIconOnlyBox(
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+    contentDescription: String,
+    icon: @Composable () -> Unit
+) {
+    Box(
+        modifier = modifier
+            .height(SporeDocSpacing.viewerFooterBoxHeightDp)
+            .border(SporeDocStroke.hairlineDp, SporeDocColors.viewerFooterBoxStroke)
+            .background(SporeDocColors.viewerFooterBoxBackground)
+            .clickable(onClick = onClick)
+            .semantics {
+                role = Role.Button
+                this.contentDescription = contentDescription
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        icon()
+    }
+}
+
+/**
+ * Box for `share` (SD-21 R1, R6): icon plus the `SHARE` label, heavier visual weight than the
+ * other four boxes, pinned to the footer's trailing edge, clickable with a button-role
+ * content description.
+ */
+@Composable
+private fun ShareBox(modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val shareContentDescription = stringResource(R.string.viewer_footer_share_content_description)
     Box(
         modifier = modifier
             .height(SporeDocSpacing.viewerFooterBoxHeightDp)
             .border(SporeDocStroke.hairlineDp, SporeDocColors.viewerFooterShareStroke)
             .background(SporeDocColors.viewerFooterShareBackground)
             .padding(horizontal = SporeDocSpacing.viewerFooterShareHorizontalPaddingDp)
-            .semantics { disabled() },
+            .clickable(onClick = onClick)
+            .semantics {
+                role = Role.Button
+                contentDescription = shareContentDescription
+            },
         contentAlignment = Alignment.Center
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

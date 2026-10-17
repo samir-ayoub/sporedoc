@@ -65,6 +65,10 @@ fun ViewerScreen(viewModel: ViewerViewModel, onBack: () -> Unit) {
         state = state,
         loadPage = viewModel::loadPage,
         onBack = guardedOnBack,
-        onPageChanged = viewModel::onPageChanged
+        onPageChanged = viewModel::onPageChanged,
+        onShareClicked = viewModel::onExportRequested,
+        onDeleteClicked = viewModel::onDeleteRequested,
+        onDeleteConfirmed = viewModel::onDeleteConfirmed,
+        onDeleteCancelled = viewModel::onDeleteCancelled
     )
 }
