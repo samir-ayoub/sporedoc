@@ -33,16 +33,18 @@ import com.knowledge.sporedoc.ui.theme.SporeDocStroke
 import com.knowledge.sporedoc.ui.theme.SporeDocTypography
 
 /**
- * The footer (SD-20 R2-R9, reconnected by SD-21 R1-R8): a fixed, non-scrolling row of five
- * boxes, in order `crop, rotate, sign, delete, share`. `crop`, `rotate` and `sign` remain
- * inert with disabled semantics (R8); `delete` and `share` are wired to [onDeleteClicked] and
- * [onShareClicked] respectively, with button-role content descriptions (R2, R3, R6, R7).
+ * The footer (SD-20 R2-R9, reconnected by SD-21/SD-22/SD-23): a fixed, non-scrolling row of
+ * five boxes, in order `crop, rotate, sign, delete, share`. `sign` remains inert with
+ * disabled semantics (R8); `crop`, `rotate`, `delete` and `share` are wired to
+ * [onCropClicked], [onRotateClicked], [onDeleteClicked] and [onShareClicked] respectively,
+ * with button-role content descriptions.
  */
 @Composable
 fun ViewerFooter(
     onShareClicked: () -> Unit,
     onDeleteClicked: () -> Unit,
     onRotateClicked: () -> Unit,
+    onCropClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -67,7 +69,11 @@ fun ViewerFooter(
                 ),
             horizontalArrangement = Arrangement.spacedBy(SporeDocSpacing.viewerFooterBoxGapDp)
         ) {
-            IconOnlyBox(modifier = Modifier.weight(1f)) { CropIcon() }
+            EnabledIconOnlyBox(
+                modifier = Modifier.weight(1f),
+                onClick = onCropClicked,
+                contentDescription = stringResource(R.string.viewer_footer_crop_content_description)
+            ) { CropIcon() }
             EnabledIconOnlyBox(
                 modifier = Modifier.weight(1f),
                 onClick = onRotateClicked,

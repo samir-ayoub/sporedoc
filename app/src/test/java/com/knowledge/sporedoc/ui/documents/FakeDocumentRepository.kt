@@ -1,5 +1,6 @@
 package com.knowledge.sporedoc.ui.documents
 
+import com.knowledge.sporedoc.domain.model.CropRect
 import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
@@ -69,6 +70,12 @@ class FakeDocumentRepository(
 
     /** When set, returned by every [rotatePages] call instead of the default succeed-with-no-op. */
     var rotatePagesResult: Result<Unit, DocumentError>? = null
+
+    /** Record of every (id, pageIndex, cropRect) triple passed to [cropPage]. */
+    val cropPageCalls = mutableListOf<Triple<DocumentId, Int, CropRect>>()
+
+    /** When set, returned by every [cropPage] call instead of the default succeed-with-no-op. */
+    var cropPageResult: Result<Unit, DocumentError>? = null
 
     override suspend fun listDocuments(): Result<List<Document>, DocumentError> =
         listDocumentsResult ?: Result.Success(documents.toList())
@@ -150,6 +157,11 @@ class FakeDocumentRepository(
     override suspend fun rotatePages(id: DocumentId, rotationsByPageIndex: Map<Int, Int>): Result<Unit, DocumentError> {
         rotatePagesCalls.add(id to rotationsByPageIndex)
         return rotatePagesResult ?: Result.Success(Unit)
+    }
+
+    override suspend fun cropPage(id: DocumentId, pageIndex: Int, cropRect: CropRect): Result<Unit, DocumentError> {
+        cropPageCalls.add(Triple(id, pageIndex, cropRect))
+        return cropPageResult ?: Result.Success(Unit)
     }
 
     /** Simulates a document disappearing from disk between two `listDocuments` calls. */

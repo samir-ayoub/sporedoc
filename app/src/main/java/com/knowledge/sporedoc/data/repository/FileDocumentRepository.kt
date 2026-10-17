@@ -4,8 +4,10 @@ import com.knowledge.sporedoc.data.file.DuplicateFileFinder
 import com.knowledge.sporedoc.data.file.FileDigest
 import com.knowledge.sporedoc.data.file.PdfFileAccess
 import com.knowledge.sporedoc.data.file.PdfMerger
+import com.knowledge.sporedoc.data.file.PdfPageCropper
 import com.knowledge.sporedoc.data.file.PdfPageRotator
 import com.knowledge.sporedoc.data.file.Sha256FileDigest
+import com.knowledge.sporedoc.domain.model.CropRect
 import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
@@ -33,6 +35,7 @@ class FileDocumentRepository(
     private val clock: Clock,
     private val pdfMerger: PdfMerger,
     private val pdfPageRotator: PdfPageRotator,
+    private val pdfPageCropper: PdfPageCropper,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     private val fileDigest: FileDigest = Sha256FileDigest()
 ) : DocumentRepository {
@@ -146,6 +149,29 @@ class FileDocumentRepository(
             is Result.Failure -> {
                 provisionalFile.delete()
                 Result.Failure(rotateResult.error)
+            }
+            is Result.Success -> {
+                val lastModified = file.lastModified()
+                file.delete()
+                provisionalFile.renameTo(file)
+                file.setLastModified(lastModified)
+                Result.Success(Unit)
+            }
+        }
+    }
+
+    override suspend fun cropPage(
+        id: DocumentId,
+        pageIndex: Int,
+        cropRect: CropRect
+    ): Result<Unit, DocumentError> = withContext(ioDispatcher) {
+        val file = findFile(id) ?: return@withContext Result.Failure(DocumentError.FileMissing(id))
+        val provisionalFile = File(documentsDir, ".staging-crop-${System.nanoTime()}")
+
+        when (val cropResult = pdfPageCropper.cropPage(file, provisionalFile, pageIndex, cropRect)) {
+            is Result.Failure -> {
+                provisionalFile.delete()
+                Result.Failure(cropResult.error)
             }
             is Result.Success -> {
                 val lastModified = file.lastModified()

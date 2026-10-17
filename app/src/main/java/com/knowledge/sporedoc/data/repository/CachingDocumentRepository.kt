@@ -1,5 +1,6 @@
 package com.knowledge.sporedoc.data.repository
 
+import com.knowledge.sporedoc.domain.model.CropRect
 import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
@@ -74,6 +75,13 @@ class CachingDocumentRepository(
 
     override suspend fun rotatePages(id: DocumentId, rotationsByPageIndex: Map<Int, Int>): Result<Unit, DocumentError> =
         delegate.rotatePages(id, rotationsByPageIndex).also { result ->
+            if (result is Result.Success) {
+                thumbnailCache.remove(id)
+            }
+        }
+
+    override suspend fun cropPage(id: DocumentId, pageIndex: Int, cropRect: CropRect): Result<Unit, DocumentError> =
+        delegate.cropPage(id, pageIndex, cropRect).also { result ->
             if (result is Result.Success) {
                 thumbnailCache.remove(id)
             }

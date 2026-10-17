@@ -2,6 +2,7 @@ package com.knowledge.sporedoc.ui.viewer
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.knowledge.sporedoc.domain.model.CropCorner
 import com.knowledge.sporedoc.domain.model.PageImage
 import com.knowledge.sporedoc.domain.model.PixelSize
 import org.junit.Assert.assertTrue
@@ -35,16 +36,21 @@ import org.junit.Test
  * footer's `rotate` box, previously inert) and [ViewerContent] gains
  * `onRotateRequested`/`onRotateLeftClicked`/`onRotateSaveClicked`/`onRotateCancelClicked`,
  * for the same compile-only reason.
+ *
+ * SD-23 extends the same contract again: [ViewerFooter] gains `onCropClicked` (the normal
+ * footer's `crop` box, previously inert) and [ViewerContent] gains
+ * `onCropRequested`/`onCropNodeDragged`/`onCropSaveClicked`/`onCropCancelClicked`, for the
+ * same compile-only reason.
  */
 class ViewerFooterContractTest {
 
     @Test
-    fun `ViewerFooter accepts share, delete and rotate callbacks`() {
+    fun `ViewerFooter accepts share, delete, rotate and crop callbacks`() {
         assertTrue(true)
     }
 
     @Test
-    fun `ViewerContent accepts share, delete, rotate callbacks plus delete dialog confirm and cancel`() {
+    fun `ViewerContent accepts share, delete, rotate and crop callbacks plus delete dialog confirm and cancel`() {
         assertTrue(true)
     }
 }
@@ -54,12 +60,14 @@ private fun footerContract(
     onShareClicked: () -> Unit,
     onDeleteClicked: () -> Unit,
     onRotateClicked: () -> Unit,
+    onCropClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     ViewerFooter(
         onShareClicked = onShareClicked,
         onDeleteClicked = onDeleteClicked,
         onRotateClicked = onRotateClicked,
+        onCropClicked = onCropClicked,
         modifier = modifier
     )
 }
@@ -78,6 +86,10 @@ private fun contentContract(
     onRotateLeftClicked: () -> Unit,
     onRotateSaveClicked: () -> Unit,
     onRotateCancelClicked: () -> Unit,
+    onCropRequested: () -> Unit,
+    onCropNodeDragged: (CropCorner, Float, Float) -> Unit,
+    onCropSaveClicked: () -> Unit,
+    onCropCancelClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     ViewerContent(
@@ -93,6 +105,10 @@ private fun contentContract(
         onRotateLeftClicked = onRotateLeftClicked,
         onRotateSaveClicked = onRotateSaveClicked,
         onRotateCancelClicked = onRotateCancelClicked,
+        onCropRequested = onCropRequested,
+        onCropNodeDragged = onCropNodeDragged,
+        onCropSaveClicked = onCropSaveClicked,
+        onCropCancelClicked = onCropCancelClicked,
         modifier = modifier
     )
 }

@@ -3,11 +3,14 @@ package com.knowledge.sporedoc.ui.viewer
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.knowledge.sporedoc.domain.model.CropCorner
+import com.knowledge.sporedoc.domain.model.CropRect
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PageImage
 import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentRepository
 import com.knowledge.sporedoc.domain.usecase.AccumulateRotation
+import com.knowledge.sporedoc.domain.usecase.AdjustCropRect
 import com.knowledge.sporedoc.domain.util.Result
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -36,6 +39,7 @@ class ViewerViewModel(
     val effects: Flow<ViewerEffect> = _effects.receiveAsFlow()
 
     private val accumulateRotation = AccumulateRotation()
+    private val adjustCropRect = AdjustCropRect()
 
     init {
         viewModelScope.launch {
@@ -129,5 +133,42 @@ class ViewerViewModel(
     /** Discards any accumulated rotation and exits rotate mode without touching the repository. */
     fun onRotateCancelClicked() {
         _uiState.value = _uiState.value.copy(isRotateModeActive = false, pageRotationDegrees = emptyMap())
+    }
+
+    /** Enters the dedicated crop-mode state (SAVE/CANCEL), with the fixed initial rectangle. */
+    fun onCropRequested() {
+        _uiState.value = _uiState.value.copy(isCropModeActive = true, cropRect = CropRect.Initial)
+    }
+
+    /** Moves [corner] to the requested position, clamped and locked by [AdjustCropRect]; a no-op if crop mode is inactive. */
+    fun onCropNodeDragged(corner: CropCorner, normalizedX: Float, normalizedY: Float) {
+        val current = _uiState.value.cropRect ?: return
+        _uiState.value = _uiState.value.copy(cropRect = adjustCropRect(current, corner, normalizedX, normalizedY))
+    }
+
+    /** Crops the current page to the pending rectangle, then exits crop mode on success. */
+    fun onCropSaveClicked() {
+        val cropRect = _uiState.value.cropRect ?: return
+        val pageIndex = _uiState.value.currentPage - 1
+
+        viewModelScope.launch {
+            when (documentRepository.cropPage(documentId, pageIndex, cropRect)) {
+                is Result.Success -> {
+                    _uiState.value = _uiState.value.copy(
+                        isCropModeActive = false,
+                        cropRect = null,
+                        contentRevision = _uiState.value.contentRevision + 1
+                    )
+                }
+                is Result.Failure -> {
+                    _effects.send(ViewerEffect.CropSaveFailed)
+                }
+            }
+        }
+    }
+
+    /** Discards the pending rectangle and exits crop mode without touching the repository. */
+    fun onCropCancelClicked() {
+        _uiState.value = _uiState.value.copy(isCropModeActive = false, cropRect = null)
     }
 }

@@ -67,6 +67,14 @@
     <string name="rotate_cancel_content_description">Cancel rotation</string>
     <string name="rotate_save_error_message">Couldn\'t save the rotated page. Please try again.</string>
 
+    <!-- ViewerScreen crop mode (SD-23) -->
+    <string name="viewer_footer_crop_content_description">Crop page</string>
+    <string name="crop_save_label">SAVE</string>
+    <string name="crop_save_content_description">Save crop</string>
+    <string name="crop_cancel_content_description">Cancel crop</string>
+    <string name="crop_save_error_message">Couldn\'t save the cropped page. Please try again.</string>
+    <string name="crop_node_content_description">Crop corner</string>
+
     <!-- Shared dialogs -->
     <string name="delete_dialog_title">Delete document?</string>
     <string name="delete_dialog_body">This file will be permanently deleted.</string>

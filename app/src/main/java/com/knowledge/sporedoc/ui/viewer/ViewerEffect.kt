@@ -15,4 +15,7 @@ sealed interface ViewerEffect {
 
     /** SAVE failed while persisting an accumulated rotation; rotate mode and the pending map stay as they were. */
     data object RotateSaveFailed : ViewerEffect
+
+    /** SAVE failed while persisting a crop; crop mode and the pending rectangle stay as they were. */
+    data object CropSaveFailed : ViewerEffect
 }
