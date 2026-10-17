@@ -62,6 +62,13 @@ object SporeDocSpacing {
     val viewerFooterPaddingBottomDp: Dp = 30.dp
     val viewerFooterButtonHeightDp: Dp = 58.dp
 
+    // ui/viewer/ViewerFooter (SD-20): five-box inert action footer, no handover-JSON entry.
+    val viewerFooterBoxHeightDp: Dp = 58.dp
+    val viewerFooterBoxGapDp: Dp = 8.dp
+    val viewerFooterIconSizeDp: Dp = 18.dp
+    val viewerFooterShareIconLabelGapDp: Dp = 8.dp
+    val viewerFooterShareHorizontalPaddingDp: Dp = 16.dp
+
     // ui/viewer/DeleteConfirmationDialog
     val dialogPaddingDp: Dp = 20.dp
 

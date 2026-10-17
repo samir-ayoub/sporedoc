@@ -53,4 +53,11 @@ object SporeDocColors {
     // SD-17: selection mode tokens (no handover-JSON entry; picked against the reference PNG).
     val rust = Color(0xFFB7410E)
     val selectionTint = Color(0x26D4AF37)
+
+    // SD-20: five-box viewer footer tokens (no handover-JSON entry; picked against the
+    // reference PNG "6 · Documento — ações sobre um@2x.png").
+    val viewerFooterBoxStroke = Color(0x2EB89047)
+    val viewerFooterBoxBackground = Color(0x4D030305)
+    val viewerFooterShareBackground = Color(0x8C030305)
+    val viewerFooterShareStroke = Color(0xFFD4AF37)
 }
