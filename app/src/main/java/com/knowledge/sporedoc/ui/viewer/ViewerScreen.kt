@@ -24,6 +24,7 @@ fun ViewerScreen(viewModel: ViewerViewModel, onBack: () -> Unit) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val loadErrorMessage = stringResource(R.string.viewer_load_error_message)
+    val rotateSaveErrorMessage = stringResource(R.string.rotate_save_error_message)
 
     // Guards against a navigation action firing more than once for this screen instance
     // (e.g. two rapid taps on the back icon during the exit transition, SD-14): the first
@@ -57,6 +58,9 @@ fun ViewerScreen(viewModel: ViewerViewModel, onBack: () -> Unit) {
                     Toast.makeText(context, loadErrorMessage, Toast.LENGTH_LONG).show()
                     guardedOnBack()
                 }
+                ViewerEffect.RotateSaveFailed -> {
+                    Toast.makeText(context, rotateSaveErrorMessage, Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -69,6 +73,10 @@ fun ViewerScreen(viewModel: ViewerViewModel, onBack: () -> Unit) {
         onShareClicked = viewModel::onExportRequested,
         onDeleteClicked = viewModel::onDeleteRequested,
         onDeleteConfirmed = viewModel::onDeleteConfirmed,
-        onDeleteCancelled = viewModel::onDeleteCancelled
+        onDeleteCancelled = viewModel::onDeleteCancelled,
+        onRotateRequested = viewModel::onRotateRequested,
+        onRotateLeftClicked = viewModel::onRotateLeftClicked,
+        onRotateSaveClicked = viewModel::onRotateSaveClicked,
+        onRotateCancelClicked = viewModel::onRotateCancelClicked
     )
 }

@@ -30,16 +30,21 @@ import org.junit.Test
  * [ViewerContent]. The private composables below only need to *compile* against that
  * signature; while the production code does not yet accept these parameters, this file
  * fails to compile, which is this delivery's valid "red".
+ *
+ * SD-22 extends the same contract: [ViewerFooter] gains `onRotateClicked` (the normal
+ * footer's `rotate` box, previously inert) and [ViewerContent] gains
+ * `onRotateRequested`/`onRotateLeftClicked`/`onRotateSaveClicked`/`onRotateCancelClicked`,
+ * for the same compile-only reason.
  */
 class ViewerFooterContractTest {
 
     @Test
-    fun `ViewerFooter accepts share and delete callbacks`() {
+    fun `ViewerFooter accepts share, delete and rotate callbacks`() {
         assertTrue(true)
     }
 
     @Test
-    fun `ViewerContent accepts share and delete callbacks plus delete dialog confirm and cancel`() {
+    fun `ViewerContent accepts share, delete, rotate callbacks plus delete dialog confirm and cancel`() {
         assertTrue(true)
     }
 }
@@ -48,11 +53,13 @@ class ViewerFooterContractTest {
 private fun footerContract(
     onShareClicked: () -> Unit,
     onDeleteClicked: () -> Unit,
+    onRotateClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     ViewerFooter(
         onShareClicked = onShareClicked,
         onDeleteClicked = onDeleteClicked,
+        onRotateClicked = onRotateClicked,
         modifier = modifier
     )
 }
@@ -67,6 +74,10 @@ private fun contentContract(
     onDeleteClicked: () -> Unit,
     onDeleteConfirmed: () -> Unit,
     onDeleteCancelled: () -> Unit,
+    onRotateRequested: () -> Unit,
+    onRotateLeftClicked: () -> Unit,
+    onRotateSaveClicked: () -> Unit,
+    onRotateCancelClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     ViewerContent(
@@ -78,6 +89,10 @@ private fun contentContract(
         onDeleteClicked = onDeleteClicked,
         onDeleteConfirmed = onDeleteConfirmed,
         onDeleteCancelled = onDeleteCancelled,
+        onRotateRequested = onRotateRequested,
+        onRotateLeftClicked = onRotateLeftClicked,
+        onRotateSaveClicked = onRotateSaveClicked,
+        onRotateCancelClicked = onRotateCancelClicked,
         modifier = modifier
     )
 }

@@ -2,8 +2,10 @@ package com.knowledge.sporedoc.data.repository
 
 import com.knowledge.sporedoc.data.file.FakePdfFileAccess
 import com.knowledge.sporedoc.data.file.FakePdfMerger
+import com.knowledge.sporedoc.data.file.FakePdfPageRotator
 import com.knowledge.sporedoc.data.file.PdfMerger
 import com.knowledge.sporedoc.data.file.validPdfContent
+import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentError
 import com.knowledge.sporedoc.domain.util.Result
@@ -31,13 +33,15 @@ class FileDocumentRepositoryTest {
 
     private fun newRepository(
         clock: () -> Instant = { fixedNow },
-        pdfMerger: PdfMerger = FakePdfMerger()
+        pdfMerger: PdfMerger = FakePdfMerger(),
+        pdfPageRotator: FakePdfPageRotator = FakePdfPageRotator()
     ): FileDocumentRepository =
         FileDocumentRepository(
             documentsDir = tempFolder.root,
             pdfFileAccess = FakePdfFileAccess(),
             clock = clock,
-            pdfMerger = pdfMerger
+            pdfMerger = pdfMerger,
+            pdfPageRotator = pdfPageRotator
         )
 
     private fun writeRawFile(name: String, content: String, lastModifiedMillis: Long? = null): File {
@@ -531,5 +535,71 @@ class FileDocumentRepositoryTest {
         assertTrue(File(tempFolder.root, "b.pdf").exists())
         assertTrue(File(tempFolder.root, "a.pdf").exists())
         assertEquals(filesBefore, tempFolder.root.listFiles()!!.map { it.name }.toSet())
+    }
+
+    // --- rotatePages (SD-22) ---
+
+    @Test
+    fun `rotatePages passes the document's file and the given rotations map to the page rotator`() = runTest {
+        val pdfPageRotator = FakePdfPageRotator()
+        val repository = newRepository(pdfPageRotator = pdfPageRotator)
+        val added = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = "contrato.pdf").asSuccess()
+
+        repository.rotatePages(added.id, mapOf(1 to 90)).asSuccess()
+
+        val (sourceFile, _, rotations) = pdfPageRotator.rotatePagesCalls.single()
+        assertEquals("contrato.pdf", sourceFile.name)
+        assertEquals(mapOf(1 to 90), rotations)
+    }
+
+    @Test
+    fun `rotatePages replaces the original file in place on success, leaving a single file with the same name`() = runTest {
+        val pdfPageRotator = FakePdfPageRotator()
+        val repository = newRepository(pdfPageRotator = pdfPageRotator)
+        val added = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = "contrato.pdf").asSuccess()
+
+        repository.rotatePages(added.id, mapOf(0 to 180)).asSuccess()
+
+        assertTrue(File(tempFolder.root, "contrato.pdf").exists())
+        assertEquals(listOf("contrato.pdf"), tempFolder.root.listFiles()!!.map { it.name })
+    }
+
+    @Test
+    fun `rotatePages returns a file-missing error for an id that does not exist on disk, without calling the rotator`() = runTest {
+        val pdfPageRotator = FakePdfPageRotator()
+        val repository = newRepository(pdfPageRotator = pdfPageRotator)
+
+        val error = repository.rotatePages(DocumentId("ghost.pdf"), mapOf(0 to 90)).asFailure()
+
+        assertTrue(error is DocumentError.FileMissing)
+        assertTrue(pdfPageRotator.rotatePagesCalls.isEmpty())
+    }
+
+    @Test
+    fun `rotatePages fails without touching the original file when the rotator itself fails`() = runTest {
+        val pdfPageRotator = FakePdfPageRotator().apply {
+            result = Result.Failure(DocumentError.UnreadableFile(DocumentId("contrato.pdf")))
+        }
+        val repository = newRepository(pdfPageRotator = pdfPageRotator)
+        val added = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = "contrato.pdf").asSuccess()
+        val originalContent = File(tempFolder.root, "contrato.pdf").readText()
+
+        val error = repository.rotatePages(added.id, mapOf(0 to 90)).asFailure()
+
+        assertTrue(error is DocumentError.UnreadableFile)
+        assertEquals(originalContent, File(tempFolder.root, "contrato.pdf").readText())
+        assertEquals(listOf("contrato.pdf"), tempFolder.root.listFiles()!!.map { it.name })
+    }
+
+    @Test
+    fun `rotatePages keeps the document's page count unchanged after a successful rotation`() = runTest {
+        val pdfPageRotator = FakePdfPageRotator()
+        val repository = newRepository(pdfPageRotator = pdfPageRotator)
+        val added = repository.addDocument(FakeDocumentSource(validPdfContent(5)), requestedName = "contrato.pdf").asSuccess()
+
+        repository.rotatePages(added.id, mapOf(2 to 90)).asSuccess()
+
+        val pageCount = repository.getPageCount(added.id).asSuccess()
+        assertEquals(5, pageCount)
     }
 }

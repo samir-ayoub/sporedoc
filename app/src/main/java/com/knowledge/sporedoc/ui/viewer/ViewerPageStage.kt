@@ -37,6 +37,8 @@ fun ViewerPageStage(
     currentPage: Int,
     onPageChanged: (Int) -> Unit,
     loadPage: suspend (Int, PixelSize) -> PageImage?,
+    pageRotationDegrees: Map<Int, Int> = emptyMap(),
+    contentRevision: Int = 0,
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(initialPage = (currentPage - 1).coerceIn(0, (pageCount - 1).coerceAtLeast(0))) {
@@ -62,6 +64,8 @@ fun ViewerPageStage(
                     ViewerZoomablePage(
                         pageIndex = pageIndex,
                         loadPage = loadPage,
+                        rotationDegrees = pageRotationDegrees[pageIndex] ?: 0,
+                        contentRevision = contentRevision,
                         onRestChanged = { isAtRest ->
                             if (pageIndex == pagerState.currentPage) {
                                 currentPageAtRest = isAtRest

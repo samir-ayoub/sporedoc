@@ -25,4 +25,14 @@ interface DocumentRepository {
      * no deleted originals.
      */
     suspend fun mergeDocuments(orderedIds: List<DocumentId>): Result<Document, DocumentError>
+
+    /**
+     * Applies an additional counterclockwise rotation to selected pages of [id]'s PDF, replacing
+     * the file in place. Each key of [rotationsByPageIndex] is a 0-based page index; each value
+     * must be 90, 180 or 270 (degrees counterclockwise to apply on top of the page's current
+     * on-disk content). Pages absent from the map are left untouched. A failure (missing file,
+     * unreadable file, or an index outside the document's page range) leaves the file on disk
+     * exactly as it was.
+     */
+    suspend fun rotatePages(id: DocumentId, rotationsByPageIndex: Map<Int, Int>): Result<Unit, DocumentError>
 }

@@ -64,6 +64,12 @@ class FakeDocumentRepository(
     /** When set, returned by every [mergeDocuments] call instead of the default merge-and-succeed. */
     var mergeDocumentsResult: Result<Document, DocumentError>? = null
 
+    /** Record of every (id, rotationsByPageIndex) pair passed to [rotatePages]. */
+    val rotatePagesCalls = mutableListOf<Pair<DocumentId, Map<Int, Int>>>()
+
+    /** When set, returned by every [rotatePages] call instead of the default succeed-with-no-op. */
+    var rotatePagesResult: Result<Unit, DocumentError>? = null
+
     override suspend fun listDocuments(): Result<List<Document>, DocumentError> =
         listDocumentsResult ?: Result.Success(documents.toList())
 
@@ -139,6 +145,11 @@ class FakeDocumentRepository(
         documents.removeAll { it.id in orderedIds }
         documents.add(merged)
         return Result.Success(merged)
+    }
+
+    override suspend fun rotatePages(id: DocumentId, rotationsByPageIndex: Map<Int, Int>): Result<Unit, DocumentError> {
+        rotatePagesCalls.add(id to rotationsByPageIndex)
+        return rotatePagesResult ?: Result.Success(Unit)
     }
 
     /** Simulates a document disappearing from disk between two `listDocuments` calls. */

@@ -29,6 +29,10 @@ fun ViewerContent(
     onDeleteClicked: () -> Unit,
     onDeleteConfirmed: () -> Unit,
     onDeleteCancelled: () -> Unit,
+    onRotateRequested: () -> Unit,
+    onRotateLeftClicked: () -> Unit,
+    onRotateSaveClicked: () -> Unit,
+    onRotateCancelClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -43,14 +47,25 @@ fun ViewerContent(
                 currentPage = state.currentPage,
                 onPageChanged = onPageChanged,
                 loadPage = loadPage,
+                pageRotationDegrees = state.pageRotationDegrees,
+                contentRevision = state.contentRevision,
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f)
             )
-            ViewerFooter(
-                onShareClicked = onShareClicked,
-                onDeleteClicked = onDeleteClicked
-            )
+            if (state.isRotateModeActive) {
+                ViewerRotateFooter(
+                    onRotateLeftClicked = onRotateLeftClicked,
+                    onSaveClicked = onRotateSaveClicked,
+                    onCancelClicked = onRotateCancelClicked
+                )
+            } else {
+                ViewerFooter(
+                    onShareClicked = onShareClicked,
+                    onDeleteClicked = onDeleteClicked,
+                    onRotateClicked = onRotateRequested
+                )
+            }
         }
         Vignette()
         Grain()
