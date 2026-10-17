@@ -1,5 +1,6 @@
 package com.knowledge.sporedoc.data.repository
 
+import com.knowledge.sporedoc.domain.model.CropRect
 import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
@@ -37,6 +38,8 @@ class CachingDocumentRepositoryTest {
         var mergeDocumentsResult: Result<Document, DocumentError> = Result.Failure(DocumentError.InvalidName)
         val rotatePagesCalls = mutableListOf<Pair<DocumentId, Map<Int, Int>>>()
         var rotatePagesResult: Result<Unit, DocumentError> = Result.Failure(DocumentError.InvalidName)
+        val cropPageCalls = mutableListOf<Triple<DocumentId, Int, CropRect>>()
+        var cropPageResult: Result<Unit, DocumentError> = Result.Failure(DocumentError.InvalidName)
 
         override suspend fun listDocuments(): Result<List<Document>, DocumentError> = Result.Success(emptyList())
 
@@ -72,6 +75,11 @@ class CachingDocumentRepositoryTest {
         override suspend fun rotatePages(id: DocumentId, rotationsByPageIndex: Map<Int, Int>): Result<Unit, DocumentError> {
             rotatePagesCalls.add(id to rotationsByPageIndex)
             return rotatePagesResult
+        }
+
+        override suspend fun cropPage(id: DocumentId, pageIndex: Int, cropRect: CropRect): Result<Unit, DocumentError> {
+            cropPageCalls.add(Triple(id, pageIndex, cropRect))
+            return cropPageResult
         }
     }
 
@@ -337,6 +345,59 @@ class CachingDocumentRepositoryTest {
         delegate.getThumbnailCalls.clear()
 
         cache.rotatePages(id, mapOf(0 to 90))
+        val result = cache.getThumbnail(id, target)
+
+        assertEquals(Result.Success(image(1)), result)
+        assertTrue(delegate.getThumbnailCalls.isEmpty())
+    }
+
+    // --- cropPage (SD-23) ---
+
+    @Test
+    fun `cropPage delegates with the given id, page index and crop rect and returns the delegate's result`() = runTest {
+        val id = DocumentId("a.pdf")
+        val cropRect = CropRect(left = 0.1f, top = 0.1f, right = 0.9f, bottom = 0.9f)
+        val delegate = RecordingDocumentRepository().apply {
+            cropPageResult = Result.Success(Unit)
+        }
+        val cache = CachingDocumentRepository(delegate)
+
+        val result = cache.cropPage(id, 0, cropRect)
+
+        assertEquals(listOf(Triple(id, 0, cropRect)), delegate.cropPageCalls)
+        assertEquals(Result.Success(Unit), result)
+    }
+
+    @Test
+    fun `a successful cropPage evicts the cached thumbnail for that document`() = runTest {
+        val id = DocumentId("a.pdf")
+        val delegate = RecordingDocumentRepository().apply {
+            thumbnails = mapOf(id to Result.Success(image(1)))
+            cropPageResult = Result.Success(Unit)
+        }
+        val cache = CachingDocumentRepository(delegate)
+        cache.getThumbnail(id, target)
+
+        cache.cropPage(id, 0, CropRect.Initial)
+        delegate.thumbnails = mapOf(id to Result.Success(image(2))) // cropped pixels now on disk
+
+        val afterCrop = cache.getThumbnail(id, target)
+
+        assertEquals(Result.Success(image(2)), afterCrop)
+    }
+
+    @Test
+    fun `a failed cropPage does not evict the cached thumbnail`() = runTest {
+        val id = DocumentId("a.pdf")
+        val delegate = RecordingDocumentRepository().apply {
+            thumbnails = mapOf(id to Result.Success(image(1)))
+            cropPageResult = Result.Failure(DocumentError.UnreadableFile(id))
+        }
+        val cache = CachingDocumentRepository(delegate)
+        cache.getThumbnail(id, target)
+        delegate.getThumbnailCalls.clear()
+
+        cache.cropPage(id, 0, CropRect.Initial)
         val result = cache.getThumbnail(id, target)
 
         assertEquals(Result.Success(image(1)), result)

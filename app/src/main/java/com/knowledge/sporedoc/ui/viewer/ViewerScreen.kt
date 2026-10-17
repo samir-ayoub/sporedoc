@@ -25,6 +25,7 @@ fun ViewerScreen(viewModel: ViewerViewModel, onBack: () -> Unit) {
     val context = LocalContext.current
     val loadErrorMessage = stringResource(R.string.viewer_load_error_message)
     val rotateSaveErrorMessage = stringResource(R.string.rotate_save_error_message)
+    val cropSaveErrorMessage = stringResource(R.string.crop_save_error_message)
 
     // Guards against a navigation action firing more than once for this screen instance
     // (e.g. two rapid taps on the back icon during the exit transition, SD-14): the first
@@ -61,6 +62,9 @@ fun ViewerScreen(viewModel: ViewerViewModel, onBack: () -> Unit) {
                 ViewerEffect.RotateSaveFailed -> {
                     Toast.makeText(context, rotateSaveErrorMessage, Toast.LENGTH_LONG).show()
                 }
+                ViewerEffect.CropSaveFailed -> {
+                    Toast.makeText(context, cropSaveErrorMessage, Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
@@ -77,6 +81,10 @@ fun ViewerScreen(viewModel: ViewerViewModel, onBack: () -> Unit) {
         onRotateRequested = viewModel::onRotateRequested,
         onRotateLeftClicked = viewModel::onRotateLeftClicked,
         onRotateSaveClicked = viewModel::onRotateSaveClicked,
-        onRotateCancelClicked = viewModel::onRotateCancelClicked
+        onRotateCancelClicked = viewModel::onRotateCancelClicked,
+        onCropRequested = viewModel::onCropRequested,
+        onCropNodeDragged = viewModel::onCropNodeDragged,
+        onCropSaveClicked = viewModel::onCropSaveClicked,
+        onCropCancelClicked = viewModel::onCropCancelClicked
     )
 }

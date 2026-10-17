@@ -2,9 +2,11 @@ package com.knowledge.sporedoc.data.repository
 
 import com.knowledge.sporedoc.data.file.FakePdfFileAccess
 import com.knowledge.sporedoc.data.file.FakePdfMerger
+import com.knowledge.sporedoc.data.file.FakePdfPageCropper
 import com.knowledge.sporedoc.data.file.FakePdfPageRotator
 import com.knowledge.sporedoc.data.file.PdfMerger
 import com.knowledge.sporedoc.data.file.validPdfContent
+import com.knowledge.sporedoc.domain.model.CropRect
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.domain.repository.DocumentError
@@ -34,14 +36,16 @@ class FileDocumentRepositoryTest {
     private fun newRepository(
         clock: () -> Instant = { fixedNow },
         pdfMerger: PdfMerger = FakePdfMerger(),
-        pdfPageRotator: FakePdfPageRotator = FakePdfPageRotator()
+        pdfPageRotator: FakePdfPageRotator = FakePdfPageRotator(),
+        pdfPageCropper: FakePdfPageCropper = FakePdfPageCropper()
     ): FileDocumentRepository =
         FileDocumentRepository(
             documentsDir = tempFolder.root,
             pdfFileAccess = FakePdfFileAccess(),
             clock = clock,
             pdfMerger = pdfMerger,
-            pdfPageRotator = pdfPageRotator
+            pdfPageRotator = pdfPageRotator,
+            pdfPageCropper = pdfPageCropper
         )
 
     private fun writeRawFile(name: String, content: String, lastModifiedMillis: Long? = null): File {
@@ -598,6 +602,74 @@ class FileDocumentRepositoryTest {
         val added = repository.addDocument(FakeDocumentSource(validPdfContent(5)), requestedName = "contrato.pdf").asSuccess()
 
         repository.rotatePages(added.id, mapOf(2 to 90)).asSuccess()
+
+        val pageCount = repository.getPageCount(added.id).asSuccess()
+        assertEquals(5, pageCount)
+    }
+
+    // --- cropPage (SD-23) ---
+
+    @Test
+    fun `cropPage passes the document's file, page index and crop rect to the page cropper`() = runTest {
+        val pdfPageCropper = FakePdfPageCropper()
+        val repository = newRepository(pdfPageCropper = pdfPageCropper)
+        val added = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = "contrato.pdf").asSuccess()
+        val cropRect = CropRect(left = 0.1f, top = 0.15f, right = 0.9f, bottom = 0.85f)
+
+        repository.cropPage(added.id, 1, cropRect).asSuccess()
+
+        val call = pdfPageCropper.cropPageCalls.single()
+        assertEquals("contrato.pdf", call.sourceFile.name)
+        assertEquals(1, call.pageIndex)
+        assertEquals(cropRect, call.cropRect)
+    }
+
+    @Test
+    fun `cropPage replaces the original file in place on success, leaving a single file with the same name`() = runTest {
+        val pdfPageCropper = FakePdfPageCropper()
+        val repository = newRepository(pdfPageCropper = pdfPageCropper)
+        val added = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = "contrato.pdf").asSuccess()
+
+        repository.cropPage(added.id, 0, CropRect.Initial).asSuccess()
+
+        assertTrue(File(tempFolder.root, "contrato.pdf").exists())
+        assertEquals(listOf("contrato.pdf"), tempFolder.root.listFiles()!!.map { it.name })
+    }
+
+    @Test
+    fun `cropPage returns a file-missing error for an id that does not exist on disk, without calling the cropper`() = runTest {
+        val pdfPageCropper = FakePdfPageCropper()
+        val repository = newRepository(pdfPageCropper = pdfPageCropper)
+
+        val error = repository.cropPage(DocumentId("ghost.pdf"), 0, CropRect.Initial).asFailure()
+
+        assertTrue(error is DocumentError.FileMissing)
+        assertTrue(pdfPageCropper.cropPageCalls.isEmpty())
+    }
+
+    @Test
+    fun `cropPage fails without touching the original file when the cropper itself fails`() = runTest {
+        val pdfPageCropper = FakePdfPageCropper().apply {
+            result = Result.Failure(DocumentError.UnreadableFile(DocumentId("contrato.pdf")))
+        }
+        val repository = newRepository(pdfPageCropper = pdfPageCropper)
+        val added = repository.addDocument(FakeDocumentSource(validPdfContent(3)), requestedName = "contrato.pdf").asSuccess()
+        val originalContent = File(tempFolder.root, "contrato.pdf").readText()
+
+        val error = repository.cropPage(added.id, 0, CropRect.Initial).asFailure()
+
+        assertTrue(error is DocumentError.UnreadableFile)
+        assertEquals(originalContent, File(tempFolder.root, "contrato.pdf").readText())
+        assertEquals(listOf("contrato.pdf"), tempFolder.root.listFiles()!!.map { it.name })
+    }
+
+    @Test
+    fun `cropPage keeps the document's page count unchanged after a successful crop`() = runTest {
+        val pdfPageCropper = FakePdfPageCropper()
+        val repository = newRepository(pdfPageCropper = pdfPageCropper)
+        val added = repository.addDocument(FakeDocumentSource(validPdfContent(5)), requestedName = "contrato.pdf").asSuccess()
+
+        repository.cropPage(added.id, 2, CropRect.Initial).asSuccess()
 
         val pageCount = repository.getPageCount(added.id).asSuccess()
         assertEquals(5, pageCount)

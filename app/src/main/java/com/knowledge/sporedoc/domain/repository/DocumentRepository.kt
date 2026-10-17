@@ -1,5 +1,6 @@
 package com.knowledge.sporedoc.domain.repository
 
+import com.knowledge.sporedoc.domain.model.CropRect
 import com.knowledge.sporedoc.domain.model.Document
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.DocumentSource
@@ -35,4 +36,11 @@ interface DocumentRepository {
      * exactly as it was.
      */
     suspend fun rotatePages(id: DocumentId, rotationsByPageIndex: Map<Int, Int>): Result<Unit, DocumentError>
+
+    /**
+     * Crops the page at [pageIndex] of [id]'s PDF to [cropRect], replacing the file in place.
+     * Every other page is left untouched. A failure (missing file, unreadable file, or an
+     * index outside the document's page range) leaves the file on disk exactly as it was.
+     */
+    suspend fun cropPage(id: DocumentId, pageIndex: Int, cropRect: CropRect): Result<Unit, DocumentError>
 }

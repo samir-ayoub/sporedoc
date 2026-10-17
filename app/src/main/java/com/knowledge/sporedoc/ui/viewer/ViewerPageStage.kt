@@ -3,8 +3,10 @@ package com.knowledge.sporedoc.ui.viewer
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Text
@@ -19,6 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.knowledge.sporedoc.R
+import com.knowledge.sporedoc.domain.model.CropCorner
+import com.knowledge.sporedoc.domain.model.CropRect
 import com.knowledge.sporedoc.domain.model.PageImage
 import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.ui.theme.SporeDocSpacing
@@ -29,6 +33,11 @@ import com.knowledge.sporedoc.ui.theme.SporeDocTypography
  * paper-filled, with page shadow and laser reticles on its four corners, and the
  * `PAGE n / total` indicator below it. Pager drag is disabled while the current page
  * is zoomed above 1x (R10), since a horizontal drag then means pan, not paging.
+ *
+ * SD-23: while [isCropModeActive], overlays [ViewerCropOverlay] over the current page's
+ * fixed-size box only - the one place that already knows that box's layout (centered,
+ * `viewerPageWidthDp` x `viewerPageAspectRatio`), so it anchors the crop nodes without
+ * recomputing that geometry elsewhere.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -39,6 +48,9 @@ fun ViewerPageStage(
     loadPage: suspend (Int, PixelSize) -> PageImage?,
     pageRotationDegrees: Map<Int, Int> = emptyMap(),
     contentRevision: Int = 0,
+    isCropModeActive: Boolean = false,
+    cropRect: CropRect? = null,
+    onCropNodeDragged: (CropCorner, Float, Float) -> Unit = { _, _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(initialPage = (currentPage - 1).coerceIn(0, (pageCount - 1).coerceAtLeast(0))) {
@@ -72,6 +84,19 @@ fun ViewerPageStage(
                             }
                         }
                     )
+                    if (isCropModeActive && cropRect != null && pageIndex == currentPage - 1) {
+                        Box(
+                            modifier = Modifier
+                                .width(SporeDocSpacing.viewerPageWidthDp)
+                                .aspectRatio(SporeDocSpacing.viewerPageAspectRatio)
+                        ) {
+                            ViewerCropOverlay(
+                                cropRect = cropRect,
+                                onNodeDragged = onCropNodeDragged,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
+                    }
                 }
             }
         }

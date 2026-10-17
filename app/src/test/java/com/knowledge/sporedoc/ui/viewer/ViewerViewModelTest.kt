@@ -1,6 +1,8 @@
 package com.knowledge.sporedoc.ui.viewer
 
 import android.net.Uri
+import com.knowledge.sporedoc.domain.model.CropCorner
+import com.knowledge.sporedoc.domain.model.CropRect
 import com.knowledge.sporedoc.domain.model.DocumentId
 import com.knowledge.sporedoc.domain.model.PageImage
 import com.knowledge.sporedoc.domain.model.PixelSize
@@ -370,5 +372,118 @@ class ViewerViewModelTest {
         assertEquals(false, state.isRotateModeActive)
         assertEquals(0, state.contentRevision)
         assertTrue(repository.rotatePagesCalls.isEmpty())
+    }
+
+    // --- crop flow (SD-23) ---
+
+    @Test
+    fun `onCropRequested enters crop mode with the fixed initial rectangle`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+
+        viewModel.onCropRequested()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isCropModeActive)
+        assertEquals(CropRect.Initial, state.cropRect)
+    }
+
+    @Test
+    fun `onCropNodeDragged moves the dragged corner's coordinates while the opposite corner stays as it was`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onCropRequested()
+        val initial = CropRect.Initial
+        val requestedX = initial.left + 0.01f
+        val requestedY = initial.top + 0.01f
+
+        viewModel.onCropNodeDragged(CropCorner.TOP_LEFT, requestedX, requestedY)
+
+        val rect = viewModel.uiState.value.cropRect!!
+        assertEquals(requestedX, rect.left, 0.0001f)
+        assertEquals(requestedY, rect.top, 0.0001f)
+        assertEquals(initial.right, rect.right, 0.0001f)
+        assertEquals(initial.bottom, rect.bottom, 0.0001f)
+    }
+
+    @Test
+    fun `onCropNodeDragged before crop mode is entered does nothing, cropRect stays null`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+
+        viewModel.onCropNodeDragged(CropCorner.TOP_LEFT, 0.3f, 0.3f)
+
+        assertNull(viewModel.uiState.value.cropRect)
+        assertEquals(false, viewModel.uiState.value.isCropModeActive)
+    }
+
+    @Test
+    fun `onCropSaveClicked crops the current page with the pending rect, then exits crop mode`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onCropRequested()
+        val pendingRect = CropRect(left = 0.1f, top = 0.1f, right = 0.9f, bottom = 0.9f)
+        viewModel.onCropNodeDragged(CropCorner.TOP_LEFT, pendingRect.left, pendingRect.top)
+        viewModel.onCropNodeDragged(CropCorner.BOTTOM_RIGHT, pendingRect.right, pendingRect.bottom)
+
+        viewModel.onCropSaveClicked()
+        runCurrent()
+
+        assertEquals(listOf(Triple(documentId, 0, pendingRect)), repository.cropPageCalls)
+        val state = viewModel.uiState.value
+        assertEquals(false, state.isCropModeActive)
+        assertNull(state.cropRect)
+        assertEquals(1, state.contentRevision)
+    }
+
+    @Test
+    fun `onCropSaveClicked targets the current page's 0-based index at the moment SAVE is tapped`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onPageChanged(3) // 0-based index 3, 1-based page 4
+        viewModel.onCropRequested()
+
+        viewModel.onCropSaveClicked()
+        runCurrent()
+
+        assertEquals(listOf(Triple(documentId, 3, CropRect.Initial)), repository.cropPageCalls)
+    }
+
+    @Test
+    fun `onCropSaveClicked on failure emits CropSaveFailed and keeps crop mode and the pending rect`() = runTest {
+        val repository = repositoryWithPageCount(6).apply {
+            cropPageResult = Result.Failure(DocumentError.FileMissing(documentId))
+        }
+        val viewModel = newViewModel(repository)
+        viewModel.onCropRequested()
+        val effects = mutableListOf<ViewerEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onCropSaveClicked()
+        runCurrent()
+
+        assertEquals(listOf(ViewerEffect.CropSaveFailed), effects)
+        val state = viewModel.uiState.value
+        assertTrue(state.isCropModeActive)
+        assertEquals(CropRect.Initial, state.cropRect)
+        assertEquals(0, state.contentRevision)
+        job.cancel()
+    }
+
+    @Test
+    fun `onCropCancelClicked discards the pending rect, exits crop mode and calls no repository method`() = runTest {
+        val repository = repositoryWithPageCount(6)
+        val viewModel = newViewModel(repository)
+        viewModel.onCropRequested()
+        viewModel.onCropNodeDragged(CropCorner.TOP_LEFT, 0.3f, 0.3f)
+
+        viewModel.onCropCancelClicked()
+
+        val state = viewModel.uiState.value
+        assertEquals(false, state.isCropModeActive)
+        assertNull(state.cropRect)
+        assertEquals(0, state.contentRevision)
+        assertTrue(repository.cropPageCalls.isEmpty())
     }
 }

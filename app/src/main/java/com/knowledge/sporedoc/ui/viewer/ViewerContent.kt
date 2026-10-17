@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.knowledge.sporedoc.domain.model.CropCorner
 import com.knowledge.sporedoc.domain.model.PageImage
 import com.knowledge.sporedoc.domain.model.PixelSize
 import com.knowledge.sporedoc.ui.components.DeleteConfirmationDialog
@@ -17,7 +18,9 @@ import com.knowledge.sporedoc.ui.theme.effects.Vignette
  * Stateless composition of the ViewerScreen's layer stack (`screens.ViewerScreen.layers`):
  * background, appBar + pageStage + footer, vignette, grain, in that order (R2). SD-21 adds
  * the delete-confirmation dialog overlay, shown when [ViewerUiState.isDeleteDialogVisible]
- * is true, and forwards the `share`/`delete` footer callbacks (R1-R4).
+ * is true, and forwards the `share`/`delete` footer callbacks. SD-23 adds a third,
+ * mutually-exclusive footer branch (normal / rotate / crop) and overlays [ViewerCropOverlay]
+ * (via [ViewerPageStage]) over the current page while [ViewerUiState.isCropModeActive].
  */
 @Composable
 fun ViewerContent(
@@ -33,6 +36,10 @@ fun ViewerContent(
     onRotateLeftClicked: () -> Unit,
     onRotateSaveClicked: () -> Unit,
     onRotateCancelClicked: () -> Unit,
+    onCropRequested: () -> Unit,
+    onCropNodeDragged: (CropCorner, Float, Float) -> Unit,
+    onCropSaveClicked: () -> Unit,
+    onCropCancelClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(modifier = modifier.fillMaxSize()) {
@@ -49,6 +56,9 @@ fun ViewerContent(
                 loadPage = loadPage,
                 pageRotationDegrees = state.pageRotationDegrees,
                 contentRevision = state.contentRevision,
+                isCropModeActive = state.isCropModeActive,
+                cropRect = state.cropRect,
+                onCropNodeDragged = onCropNodeDragged,
                 modifier = Modifier
                     .fillMaxSize()
                     .weight(1f)
@@ -59,11 +69,17 @@ fun ViewerContent(
                     onSaveClicked = onRotateSaveClicked,
                     onCancelClicked = onRotateCancelClicked
                 )
+            } else if (state.isCropModeActive) {
+                ViewerCropFooter(
+                    onSaveClicked = onCropSaveClicked,
+                    onCancelClicked = onCropCancelClicked
+                )
             } else {
                 ViewerFooter(
                     onShareClicked = onShareClicked,
                     onDeleteClicked = onDeleteClicked,
-                    onRotateClicked = onRotateRequested
+                    onRotateClicked = onRotateRequested,
+                    onCropClicked = onCropRequested
                 )
             }
         }
