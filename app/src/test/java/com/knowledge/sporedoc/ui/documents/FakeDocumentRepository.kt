@@ -40,6 +40,9 @@ class FakeDocumentRepository(
     /** When set, returned by every [deleteDocument] call instead of the default remove-and-succeed. */
     var deleteDocumentResult: Result<Unit, DocumentError>? = null
 
+    /** When an id is present here, its result overrides both [deleteDocumentResult] and the default, for per-id outcomes in batch-delete tests. */
+    var deleteDocumentResultsById: Map<DocumentId, Result<Unit, DocumentError>> = emptyMap()
+
     /** Record of every id passed to [deleteDocument], for assertions on when it was (not) called. */
     val deleteDocumentCalls = mutableListOf<DocumentId>()
 
@@ -109,6 +112,7 @@ class FakeDocumentRepository(
 
     override suspend fun deleteDocument(id: DocumentId): Result<Unit, DocumentError> {
         deleteDocumentCalls.add(id)
+        deleteDocumentResultsById[id]?.let { return it }
         deleteDocumentResult?.let { return it }
         documents.removeAll { it.id == id }
         return Result.Success(Unit)

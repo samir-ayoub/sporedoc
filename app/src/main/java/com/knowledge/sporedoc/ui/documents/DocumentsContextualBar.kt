@@ -29,7 +29,12 @@ import com.knowledge.sporedoc.ui.theme.SporeDocTypography
  * is intentionally wired to a no-op (R12): this delivery has no behavior behind them.
  */
 @Composable
-fun DocumentsContextualBar(summary: SelectionSummaryUi, modifier: Modifier = Modifier) {
+fun DocumentsContextualBar(
+    summary: SelectionSummaryUi,
+    onShareRequested: () -> Unit = {},
+    onPurgeRequested: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -60,7 +65,7 @@ fun DocumentsContextualBar(summary: SelectionSummaryUi, modifier: Modifier = Mod
                 label = stringResource(R.string.contextual_share_label),
                 description = stringResource(R.string.contextual_share_content_description),
                 color = SporeDocColors.magma,
-                onClick = {}
+                onClick = onShareRequested
             )
             ContextualAction(
                 label = stringResource(R.string.contextual_merge_label),
@@ -72,7 +77,7 @@ fun DocumentsContextualBar(summary: SelectionSummaryUi, modifier: Modifier = Mod
                 label = stringResource(R.string.contextual_purge_label),
                 description = stringResource(R.string.contextual_purge_content_description),
                 color = SporeDocColors.rust,
-                onClick = {}
+                onClick = onPurgeRequested
             )
         }
     }

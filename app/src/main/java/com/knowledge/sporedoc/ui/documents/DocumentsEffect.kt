@@ -11,6 +11,9 @@ sealed interface DocumentsEffect {
     /** Open the native share sheet for the PDF at this content Uri. */
     data class ShareDocument(val uri: Uri) : DocumentsEffect
 
+    /** Open the native share sheet for the PDFs of every currently selected document. */
+    data class ShareSelectedDocuments(val uris: List<Uri>) : DocumentsEffect
+
     /** An unexpected delete failure (e.g. the file was already missing on disk). */
     data object ShowDeleteError : DocumentsEffect
 
