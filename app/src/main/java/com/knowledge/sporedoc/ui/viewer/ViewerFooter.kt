@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -90,7 +89,6 @@ private fun IconOnlyBox(modifier: Modifier = Modifier, icon: @Composable () -> U
 private fun ShareBox(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .fillMaxHeight()
             .height(SporeDocSpacing.viewerFooterBoxHeightDp)
             .border(SporeDocStroke.hairlineDp, SporeDocColors.viewerFooterShareStroke)
             .background(SporeDocColors.viewerFooterShareBackground)
