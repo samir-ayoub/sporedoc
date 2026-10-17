@@ -58,6 +58,12 @@ class FakeDocumentRepository(
     /** Record of every (id, pageIndex, targetSize) triple passed to [getPageImage]. */
     val getPageImageCalls = mutableListOf<Triple<DocumentId, Int, PixelSize>>()
 
+    /** Record of every ordered id list passed to [mergeDocuments]. */
+    val mergeDocumentsCalls = mutableListOf<List<DocumentId>>()
+
+    /** When set, returned by every [mergeDocuments] call instead of the default merge-and-succeed. */
+    var mergeDocumentsResult: Result<Document, DocumentError>? = null
+
     override suspend fun listDocuments(): Result<List<Document>, DocumentError> =
         listDocumentsResult ?: Result.Success(documents.toList())
 
@@ -116,6 +122,23 @@ class FakeDocumentRepository(
         deleteDocumentResult?.let { return it }
         documents.removeAll { it.id == id }
         return Result.Success(Unit)
+    }
+
+    override suspend fun mergeDocuments(orderedIds: List<DocumentId>): Result<Document, DocumentError> {
+        mergeDocumentsCalls.add(orderedIds)
+        mergeDocumentsResult?.let { return it }
+
+        val mergedPageCount = orderedIds.sumOf { id -> documents.find { it.id == id }?.pageCount ?: 0 }
+        val merged = Document(
+            id = DocumentId("Spore_20261011_1430.pdf"),
+            fileName = "Spore_20261011_1430.pdf",
+            pageCount = mergedPageCount,
+            sizeBytes = 1_000L,
+            modifiedAt = java.time.Instant.parse("2026-10-11T14:30:00Z")
+        )
+        documents.removeAll { it.id in orderedIds }
+        documents.add(merged)
+        return Result.Success(merged)
     }
 
     /** Simulates a document disappearing from disk between two `listDocuments` calls. */

@@ -33,6 +33,8 @@ class CachingDocumentRepositoryTest {
         var thumbnails: Map<DocumentId, Result<PageImage, DocumentError>> = emptyMap()
         var deleteResult: Result<Unit, DocumentError> = Result.Success(Unit)
         var renameResult: ((DocumentId, String) -> Result<Document, DocumentError>)? = null
+        val mergeDocumentsCalls = mutableListOf<List<DocumentId>>()
+        var mergeDocumentsResult: Result<Document, DocumentError> = Result.Failure(DocumentError.InvalidName)
 
         override suspend fun listDocuments(): Result<List<Document>, DocumentError> = Result.Success(emptyList())
 
@@ -59,6 +61,11 @@ class CachingDocumentRepositoryTest {
             renameResult?.invoke(id, newName) ?: Result.Failure(DocumentError.FileMissing(id))
 
         override suspend fun deleteDocument(id: DocumentId): Result<Unit, DocumentError> = deleteResult
+
+        override suspend fun mergeDocuments(orderedIds: List<DocumentId>): Result<Document, DocumentError> {
+            mergeDocumentsCalls.add(orderedIds)
+            return mergeDocumentsResult
+        }
     }
 
     // --- AC4/AC5: first composition renders, second composition does not ---
@@ -205,5 +212,75 @@ class CachingDocumentRepositoryTest {
         assertTrue(listResult is Result.Success)
         assertTrue(pageCountResult is Result.Failure)
         assertTrue(pageImageResult is Result.Failure)
+    }
+
+    // --- mergeDocuments (SD-19) ---
+
+    @Test
+    fun `mergeDocuments delegates with the given order and returns the delegate's result`() = runTest {
+        val mergedDocument = Document(
+            id = DocumentId("Spore_merged.pdf"),
+            fileName = "Spore_merged.pdf",
+            pageCount = 3,
+            sizeBytes = 10L,
+            modifiedAt = Instant.EPOCH
+        )
+        val delegate = RecordingDocumentRepository().apply {
+            mergeDocumentsResult = Result.Success(mergedDocument)
+        }
+        val cache = CachingDocumentRepository(delegate)
+        val orderedIds = listOf(DocumentId("b.pdf"), DocumentId("a.pdf"))
+
+        val result = cache.mergeDocuments(orderedIds)
+
+        assertEquals(listOf(orderedIds), delegate.mergeDocumentsCalls)
+        assertEquals(Result.Success(mergedDocument), result)
+    }
+
+    @Test
+    fun `a successful merge evicts the cached thumbnails of every merged-away document`() = runTest {
+        val idA = DocumentId("a.pdf")
+        val idB = DocumentId("b.pdf")
+        val mergedDocument = Document(
+            id = DocumentId("merged.pdf"),
+            fileName = "merged.pdf",
+            pageCount = 3,
+            sizeBytes = 10L,
+            modifiedAt = Instant.EPOCH
+        )
+        val delegate = RecordingDocumentRepository().apply {
+            thumbnails = mapOf(idA to Result.Success(image(1)), idB to Result.Success(image(2)))
+            mergeDocumentsResult = Result.Success(mergedDocument)
+        }
+        val cache = CachingDocumentRepository(delegate)
+        cache.getThumbnail(idA, target)
+        cache.getThumbnail(idB, target)
+
+        cache.mergeDocuments(listOf(idA, idB))
+        delegate.thumbnails = emptyMap() // the originals are really gone from disk now
+
+        val afterA = cache.getThumbnail(idA, target)
+        val afterB = cache.getThumbnail(idB, target)
+
+        assertTrue(afterA is Result.Failure)
+        assertTrue(afterB is Result.Failure)
+    }
+
+    @Test
+    fun `a failed merge does not evict any cached thumbnail`() = runTest {
+        val idA = DocumentId("a.pdf")
+        val delegate = RecordingDocumentRepository().apply {
+            thumbnails = mapOf(idA to Result.Success(image(1)))
+            mergeDocumentsResult = Result.Failure(DocumentError.FileMissing(idA))
+        }
+        val cache = CachingDocumentRepository(delegate)
+        cache.getThumbnail(idA, target)
+        delegate.getThumbnailCalls.clear()
+
+        cache.mergeDocuments(listOf(idA, DocumentId("b.pdf")))
+        val result = cache.getThumbnail(idA, target)
+
+        assertEquals(Result.Success(image(1)), result)
+        assertTrue(delegate.getThumbnailCalls.isEmpty())
     }
 }
