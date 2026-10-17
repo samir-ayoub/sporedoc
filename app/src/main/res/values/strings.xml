@@ -55,6 +55,8 @@
     <string name="viewer_page_indicator">PAGE %1$d / %2$d</string>
     <string name="viewer_load_error_message">This document couldn\'t be opened.</string>
     <string name="viewer_footer_share_label">SHARE</string>
+    <string name="viewer_footer_share_content_description">Share document</string>
+    <string name="delete_box_content_description">Delete file</string>
 
     <!-- Shared dialogs -->
     <string name="delete_dialog_title">Delete document?</string>

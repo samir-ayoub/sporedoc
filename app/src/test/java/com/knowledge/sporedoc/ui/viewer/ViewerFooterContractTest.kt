@@ -8,57 +8,53 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
- * SD-20 compile-time contract checks.
+ * SD-21 compile-time contract checks.
  *
- * SD-20 is a pure Compose UI change: a fixed, inert five-box footer (`crop`, `rotate`,
- * `sign`, `delete`, `share`) and the removal of the top-bar delete icon. It adds no new
- * `ViewerViewModel`/`ViewerUiState`/`ViewerEffect` behavior (per the Architect's design,
- * those stay unchanged), so there is nothing new to assert through `ViewerViewModelTest`.
+ * SD-21 reconnects the `share` and `delete` footer boxes (left inert by SD-20) to the
+ * already-existing `ViewerViewModel` methods `onExportRequested`/`onDeleteRequested`/
+ * `onDeleteConfirmed`/`onDeleteCancelled`. Per the Architect's design, this adds no new
+ * `ViewerViewModel`/`ViewerUiState`/`ViewerEffect` behavior — that surface is already fully
+ * exercised by `ViewerViewModelTest` (onExportRequested, onDeleteRequested,
+ * onDeleteConfirmed, onDeleteCancelled) — so there is nothing new to assert there.
  *
- * As already documented on `ViewerViewModelTest` for SD-4, this project has no Robolectric
- * and no `androidx.compose.ui.test` dependency in the JVM unit-test source set. That means
- * the box order, the icon-only vs. icon+"SHARE" treatment, the disabled/non-clickable
- * semantics (R6/R7), the removed EXPORT button and delete icon (R1/R8), and the footer's
- * fixed position under gestures (R9) cannot be asserted by a JVM test: they can only be
- * exercised by the "Validação manual" pass described in the ticket. This is a declared
- * test gap, not an oversight.
+ * As already documented on `ViewerViewModelTest`/the previous version of this file, this
+ * project has no Robolectric and no `androidx.compose.ui.test` dependency in the JVM
+ * unit-test source set. That means content-description text (R6/R7), touch-target area
+ * (R5) and the continued inert/disabled behavior of `crop`/`rotate`/`sign` under a tap (R8)
+ * cannot be asserted by a JVM test: they can only be exercised by the "Validação manual"
+ * pass described in the ticket. This is a declared test gap, not an oversight.
  *
- * What *is* checkable from this source set is the public Compose contract itself. The
- * Architect's design drops `onExport` from [ViewerFooter], drops `onDeleteRequested` from
- * [ViewerAppBar], and drops `onDeleteRequested`/`onDeleteConfirmed`/`onDeleteCancelled`/
- * `onExport` from [ViewerContent] (their only trigger — the app-bar delete icon and the
- * full-width export button — is removed by this delivery). The private composables below
- * only need to *compile* against that reduced signature; while the current production code
- * still requires the removed parameters, this file fails to compile, which is this
- * delivery's valid "red" (SD-20 touches no `ViewerViewModel`/`ViewerUiState` surface that a
- * passing/failing assertion could otherwise exercise).
+ * What *is* checkable from this source set is the public Compose contract itself. SD-21's
+ * design restores `onShareClicked`/`onDeleteClicked` to [ViewerFooter] and adds
+ * `onShareClicked`/`onDeleteClicked`/`onDeleteConfirmed`/`onDeleteCancelled` to
+ * [ViewerContent]. The private composables below only need to *compile* against that
+ * signature; while the production code does not yet accept these parameters, this file
+ * fails to compile, which is this delivery's valid "red".
  */
 class ViewerFooterContractTest {
 
     @Test
-    fun `ViewerFooter no longer accepts an export callback`() {
+    fun `ViewerFooter accepts share and delete callbacks`() {
         assertTrue(true)
     }
 
     @Test
-    fun `ViewerAppBar no longer accepts a delete callback`() {
-        assertTrue(true)
-    }
-
-    @Test
-    fun `ViewerContent no longer accepts delete or export callbacks`() {
+    fun `ViewerContent accepts share and delete callbacks plus delete dialog confirm and cancel`() {
         assertTrue(true)
     }
 }
 
 @Composable
-private fun footerContract(modifier: Modifier = Modifier) {
-    ViewerFooter(modifier = modifier)
-}
-
-@Composable
-private fun appBarContract(fileName: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    ViewerAppBar(fileName = fileName, onBack = onBack, modifier = modifier)
+private fun footerContract(
+    onShareClicked: () -> Unit,
+    onDeleteClicked: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ViewerFooter(
+        onShareClicked = onShareClicked,
+        onDeleteClicked = onDeleteClicked,
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -67,6 +63,10 @@ private fun contentContract(
     loadPage: suspend (Int, PixelSize) -> PageImage?,
     onBack: () -> Unit,
     onPageChanged: (Int) -> Unit,
+    onShareClicked: () -> Unit,
+    onDeleteClicked: () -> Unit,
+    onDeleteConfirmed: () -> Unit,
+    onDeleteCancelled: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     ViewerContent(
@@ -74,6 +74,10 @@ private fun contentContract(
         loadPage = loadPage,
         onBack = onBack,
         onPageChanged = onPageChanged,
+        onShareClicked = onShareClicked,
+        onDeleteClicked = onDeleteClicked,
+        onDeleteConfirmed = onDeleteConfirmed,
+        onDeleteCancelled = onDeleteCancelled,
         modifier = modifier
     )
 }
