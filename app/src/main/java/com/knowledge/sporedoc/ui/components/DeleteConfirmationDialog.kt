@@ -22,6 +22,7 @@ import com.knowledge.sporedoc.ui.theme.SporeDocTypography
  */
 @Composable
 fun DeleteConfirmationDialog(
+    documentCount: Int = 1,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -35,13 +36,21 @@ fun DeleteConfirmationDialog(
             .padding(SporeDocSpacing.dialogPaddingDp),
         title = {
             Text(
-                text = stringResource(R.string.delete_dialog_title),
+                text = if (documentCount > 1) {
+                    stringResource(R.string.delete_dialog_title_plural, documentCount)
+                } else {
+                    stringResource(R.string.delete_dialog_title)
+                },
                 style = SporeDocTypography.fileName
             )
         },
         text = {
             Text(
-                text = stringResource(R.string.delete_dialog_body),
+                text = if (documentCount > 1) {
+                    stringResource(R.string.delete_dialog_body_plural, documentCount)
+                } else {
+                    stringResource(R.string.delete_dialog_body)
+                },
                 style = SporeDocTypography.fileMeta
             )
         },

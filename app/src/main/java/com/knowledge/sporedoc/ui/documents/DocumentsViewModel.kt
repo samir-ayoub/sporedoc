@@ -244,6 +244,51 @@ class DocumentsViewModel(
         _uiState.value = _uiState.value.copy(selectionMode = null)
     }
 
+    /** Opens the native share sheet for every selected document's PDF, then exits selection mode. */
+    fun onShareSelectedRequested() {
+        val selectedIds = _uiState.value.selectionMode?.selectedIds ?: return
+        if (selectedIds.isEmpty()) return
+        viewModelScope.launch {
+            val uris = selectedIds.map(shareUriFor)
+            _effects.send(DocumentsEffect.ShareSelectedDocuments(uris))
+            _uiState.value = _uiState.value.copy(selectionMode = null)
+        }
+    }
+
+    /** Opens the shared delete-confirmation dialog referring to every selected document. */
+    fun onPurgeRequested() {
+        val selectedIds = _uiState.value.selectionMode?.selectedIds ?: return
+        if (selectedIds.isEmpty()) return
+        _uiState.value = _uiState.value.copy(isPurgeConfirmationVisible = true)
+    }
+
+    /** Closes the purge-confirmation dialog without deleting anything or touching the selection. */
+    fun onPurgeCancelled() {
+        _uiState.value = _uiState.value.copy(isPurgeConfirmationVisible = false)
+    }
+
+    /** Deletes every selected document, reloading the list either way, and exits selection mode. */
+    fun onPurgeConfirmed() {
+        val selectedIds = _uiState.value.selectionMode?.selectedIds ?: return
+        viewModelScope.launch {
+            var anyFailed = false
+            for (id in selectedIds) {
+                when (documentRepository.deleteDocument(id)) {
+                    is Result.Success -> Unit
+                    is Result.Failure -> anyFailed = true
+                }
+            }
+            refresh()
+            _uiState.value = _uiState.value.copy(
+                isPurgeConfirmationVisible = false,
+                selectionMode = null
+            )
+            if (anyFailed) {
+                _effects.send(DocumentsEffect.ShowDeleteError)
+            }
+        }
+    }
+
     private fun setSelection(selectedIds: Set<DocumentId>) {
         val selectedDocuments = loadedDocuments.filter { it.id in selectedIds }
         val summary = summarizeSelectedDocuments(selectedDocuments)

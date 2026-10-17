@@ -8,7 +8,8 @@ data class DocumentsUiState(
     val sections: List<DocumentSectionUi> = emptyList(),
     val renameDialog: RenameDialogUiState? = null,
     val pendingDeleteId: DocumentId? = null,
-    val selectionMode: SelectionModeUiState? = null
+    val selectionMode: SelectionModeUiState? = null,
+    val isPurgeConfirmationVisible: Boolean = false
 )
 
 /** State while the list is in multi-select mode (SD-17); null in [DocumentsUiState] means it's off. */

@@ -60,6 +60,8 @@
     <!-- Shared dialogs -->
     <string name="delete_dialog_title">Delete document?</string>
     <string name="delete_dialog_body">This file will be permanently deleted.</string>
+    <string name="delete_dialog_title_plural">Delete %1$d documents?</string>
+    <string name="delete_dialog_body_plural">These %1$d files will be permanently deleted.</string>
     <string name="delete_dialog_confirm">DELETE</string>
     <string name="delete_dialog_cancel">CANCEL</string>
 </resources>

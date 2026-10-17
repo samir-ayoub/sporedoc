@@ -133,6 +133,14 @@ fun DocumentsScreen(
                     }
                     context.startActivity(Intent.createChooser(intent, null))
                 }
+                is DocumentsEffect.ShareSelectedDocuments -> {
+                    val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                        type = "application/pdf"
+                        putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(effect.uris))
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(Intent.createChooser(intent, null))
+                }
             }
         }
     }
@@ -163,7 +171,11 @@ fun DocumentsScreen(
             onSelectionCleared = viewModel::onSelectionCleared,
             onSelectAllToggled = viewModel::onSelectAllToggled,
             onRowLongPressed = viewModel::onRowLongPressed,
-            onRowToggled = viewModel::onRowToggled
+            onRowToggled = viewModel::onRowToggled,
+            onShareSelectedRequested = viewModel::onShareSelectedRequested,
+            onPurgeRequested = viewModel::onPurgeRequested,
+            onPurgeConfirmed = viewModel::onPurgeConfirmed,
+            onPurgeCancelled = viewModel::onPurgeCancelled
         )
         SnackbarHost(hostState = snackbarHostState, modifier = Modifier.align(Alignment.BottomCenter))
     }

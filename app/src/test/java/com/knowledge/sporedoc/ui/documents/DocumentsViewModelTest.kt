@@ -926,4 +926,205 @@ class DocumentsViewModelTest {
         assertEquals(11, summary?.totalPages)
         assertEquals("7.3", summary?.totalSizeMb)
     }
+
+    // --- batch share/purge (SD-18) ---
+
+    @Test
+    fun `onShareSelectedRequested emits ShareSelectedDocuments with the uris of every selected document`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val c = document("c.pdf", fixedNow.minusSeconds(120))
+        val repository = FakeDocumentRepository(listOf(a, b, c))
+        val uriFor = mapOf(
+            a.id to Uri.parse("content://sporedoc/a.pdf"),
+            b.id to Uri.parse("content://sporedoc/b.pdf"),
+            c.id to Uri.parse("content://sporedoc/c.pdf")
+        )
+        val viewModel = newViewModel(repository, shareUriFor = { id -> uriFor.getValue(id) })
+        viewModel.onSelectModeEntered()
+        viewModel.onSelectAllToggled()
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onShareSelectedRequested()
+        runCurrent()
+
+        val shareEffect = effects.filterIsInstance<DocumentsEffect.ShareSelectedDocuments>().singleOrNull()
+        assertEquals(uriFor.values.toSet(), shareEffect?.uris?.toSet())
+        assertEquals(3, shareEffect?.uris?.size)
+        job.cancel()
+    }
+
+    @Test
+    fun `onShareSelectedRequested exits selection mode right after sending the effect`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val repository = FakeDocumentRepository(listOf(a, b))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onSelectAllToggled()
+
+        viewModel.onShareSelectedRequested()
+        runCurrent()
+
+        assertNull(viewModel.uiState.value.selectionMode)
+    }
+
+    @Test
+    fun `onShareSelectedRequested with 0 selected documents has no effect and stays in selection mode`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onShareSelectedRequested()
+        runCurrent()
+
+        assertTrue(effects.isEmpty())
+        assertEquals(emptySet<DocumentId>(), viewModel.uiState.value.selectionMode?.selectedIds)
+        job.cancel()
+    }
+
+    @Test
+    fun `onShareSelectedRequested outside selection mode has no effect`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+
+        viewModel.onShareSelectedRequested()
+        runCurrent()
+
+        assertTrue(effects.isEmpty())
+        assertNull(viewModel.uiState.value.selectionMode)
+        job.cancel()
+    }
+
+    @Test
+    fun `onPurgeRequested with selected documents shows the confirmation dialog without deleting anything`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val c = document("c.pdf", fixedNow.minusSeconds(120))
+        val repository = FakeDocumentRepository(listOf(a, b, c))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onSelectAllToggled()
+
+        viewModel.onPurgeRequested()
+
+        assertTrue(viewModel.uiState.value.isPurgeConfirmationVisible)
+        assertTrue(repository.deleteDocumentCalls.isEmpty())
+    }
+
+    @Test
+    fun `onPurgeRequested with 0 selected documents does not show the confirmation dialog`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+
+        viewModel.onPurgeRequested()
+
+        assertTrue(!viewModel.uiState.value.isPurgeConfirmationVisible)
+    }
+
+    @Test
+    fun `onPurgeRequested outside selection mode does not show the confirmation dialog`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+
+        viewModel.onPurgeRequested()
+
+        assertTrue(!viewModel.uiState.value.isPurgeConfirmationVisible)
+    }
+
+    @Test
+    fun `onPurgeCancelled hides the dialog, deletes nothing and keeps the selection as it was`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val repository = FakeDocumentRepository(listOf(a, b))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onSelectAllToggled()
+        viewModel.onPurgeRequested()
+
+        viewModel.onPurgeCancelled()
+
+        assertTrue(!viewModel.uiState.value.isPurgeConfirmationVisible)
+        assertTrue(repository.deleteDocumentCalls.isEmpty())
+        assertEquals(setOf(a.id, b.id), viewModel.uiState.value.selectionMode?.selectedIds)
+        assertEquals(
+            listOf("a.pdf", "b.pdf").sorted(),
+            viewModel.uiState.value.sections.single().rows.map { it.fileName }.sorted()
+        )
+    }
+
+    @Test
+    fun `onPurgeConfirmed deletes every selected document, closes the dialog and exits selection mode`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val c = document("c.pdf", fixedNow.minusSeconds(120))
+        val repository = FakeDocumentRepository(listOf(a, b, c))
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onSelectAllToggled()
+        viewModel.onPurgeRequested()
+
+        viewModel.onPurgeConfirmed()
+        runCurrent()
+
+        assertEquals(setOf(a.id, b.id, c.id), repository.deleteDocumentCalls.toSet())
+        assertTrue(!viewModel.uiState.value.isPurgeConfirmationVisible)
+        assertNull(viewModel.uiState.value.selectionMode)
+        assertTrue(viewModel.uiState.value.sections.isEmpty())
+    }
+
+    @Test
+    fun `onPurgeConfirmed with a partial failure shows an error, reloads the list and still deletes the rest`() = runTest {
+        val a = document("a.pdf", fixedNow)
+        val b = document("b.pdf", fixedNow.minusSeconds(60))
+        val missing = document("missing.pdf", fixedNow.minusSeconds(120))
+        val repository = FakeDocumentRepository(listOf(a, b, missing)).apply {
+            deleteDocumentResultsById = mapOf(missing.id to Result.Failure(DocumentError.FileMissing(missing.id)))
+        }
+        val viewModel = newViewModel(repository)
+        viewModel.onSelectModeEntered()
+        viewModel.onSelectAllToggled()
+        viewModel.onPurgeRequested()
+        val effects = mutableListOf<DocumentsEffect>()
+        val job = launch { viewModel.effects.collect { effects.add(it) } }
+        runCurrent()
+        // the file is actually gone from disk already, independent of the stubbed result
+        repository.removeDocument(missing.id)
+
+        viewModel.onPurgeConfirmed()
+        runCurrent()
+
+        assertEquals(listOf(DocumentsEffect.ShowDeleteError), effects)
+        assertEquals(setOf(a.id, b.id, missing.id), repository.deleteDocumentCalls.toSet())
+        assertTrue(viewModel.uiState.value.sections.isEmpty())
+        assertNull(viewModel.uiState.value.selectionMode)
+        assertTrue(!viewModel.uiState.value.isPurgeConfirmationVisible)
+        job.cancel()
+    }
+
+    @Test
+    fun `onPurgeConfirmed with nothing selected is a no-op`() = runTest {
+        val doc = document("contrato.pdf", fixedNow)
+        val repository = FakeDocumentRepository(listOf(doc))
+        val viewModel = newViewModel(repository)
+
+        viewModel.onPurgeConfirmed()
+        runCurrent()
+
+        assertTrue(repository.deleteDocumentCalls.isEmpty())
+        assertEquals(listOf("contrato.pdf"), viewModel.uiState.value.sections.single().rows.map { it.fileName })
+    }
 }

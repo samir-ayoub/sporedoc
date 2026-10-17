@@ -63,6 +63,10 @@ fun DocumentsContent(
     onSelectAllToggled: () -> Unit = {},
     onRowLongPressed: (DocumentId) -> Unit = {},
     onRowToggled: (DocumentId) -> Unit = {},
+    onShareSelectedRequested: () -> Unit = {},
+    onPurgeRequested: () -> Unit = {},
+    onPurgeConfirmed: () -> Unit = {},
+    onPurgeCancelled: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
@@ -103,6 +107,8 @@ fun DocumentsContent(
         if (selectionMode != null) {
             DocumentsContextualBar(
                 summary = selectionMode.summary,
+                onShareRequested = onShareSelectedRequested,
+                onPurgeRequested = onPurgeRequested,
                 modifier = Modifier.align(Alignment.BottomCenter)
             )
         } else {
@@ -128,6 +134,14 @@ fun DocumentsContent(
 
     if (state.pendingDeleteId != null) {
         DeleteConfirmationDialog(onConfirm = onDeleteConfirmed, onDismiss = onDeleteCancelled)
+    }
+
+    if (state.isPurgeConfirmationVisible) {
+        DeleteConfirmationDialog(
+            documentCount = state.selectionMode?.selectedIds?.size ?: 0,
+            onConfirm = onPurgeConfirmed,
+            onDismiss = onPurgeCancelled
+        )
     }
 }
 
